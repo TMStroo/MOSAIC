@@ -1,0 +1,62 @@
+events=497994 entities=1017 sources=4
+split counts: {'backtest': 101302, 'forward': 71674, 'train': 251802, 'validation': 73216}
+train rows=251802
+fit_state: 0.11s  {'period': 'train', 'fitted_through': '2021-03-05 12:54:54', 'n_rows': 251802, 'entities': 1013, 'locations': 24, 'sources': 4}
+
+compute_features: 1.17s for 497994 rows -> 497994 rows
+  features:frequency           0.652s  rss=None
+  features:statistical         0.364s  rss=None
+  features:temporal            0.023s  rss=None
+  features:behavioral          0.007s  rss=None
+  features:data_quality        0.003s  rss=None
+  features:sequence            0.021s  rss=None
+  features:cross_source        0.017s  rss=None
+
+missing expected columns: none
+
+--- dtypes ---
+  count_1h                           Int64
+  rate_1h                            Float64
+  count_6h                           Int64
+  rate_6h                            Float64
+  count_24h                          Int64
+  rate_24h                           Float64
+  count_168h                         Int64
+  rate_168h                          Float64
+  entity_events_so_far               Float64
+  mean_value_24h                     Float64
+  std_value_24h                      Float64
+  mean_value_7d                      Float64
+  std_value_7d                       Float64
+  ewma_value                         Float64
+  ewma_abs_residual                  Float64
+  hour_of_day                        Float64
+  day_of_week                        Float64
+  day_of_year                        Float64
+  seconds_since_prev                 Int64
+  log_gap_since_prev                 Float64
+  is_rapid_succession                Float64
+  gap_vs_expected                    Float64
+  rate_24h_vs_baseline               Float64
+  value_robust_z                     Float64
+  value_iqr_ratio                    Float64
+  value_above_3iqr                   Float64
+  rate_vs_base                       Float64
+  rate_abs_deviation                 Float64
+  source_share_train                 Float64
+  source_unseen_in_train             Float64
+  value_missing                      Float64
+  location_missing                   Float64
+  record_confidence                  Float64
+  transition_probability             Float64
+  transition_unseen                  Float64
+  sources_in_hour                    Float64
+  sources_for_entity                 Float64
+  event_type_share_train             Float64
+  event_type_unseen_in_train         Float64
+
+--- null counts (should be 0 except by design) ---
+{'seconds_since_prev': 1017, 'log_gap_since_prev': 1017, 'gap_vs_expected': 1017, 'value_robust_z': 25120, 'value_iqr_ratio': 25120, 'value_above_3iqr': 25120}
+
+--- assert_causal on raw stream ---
+  assert_causal PASSED
