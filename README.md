@@ -271,34 +271,24 @@ Stages shown as detectors, fusion, API and UI are **not yet implemented**.
 
 ## 7. Research workflow
 
-```mermaid
-flowchart LR
-    Q["Research question"] --> DS["Dataset<br/>synthetic + public"]
-    DS --> PROTO["Experimental protocol<br/>chronological splits"]
-    PROTO --> BASE["Statistical & ML<br/>baselines"]
-    BASE --> INT["Intervention<br/>add feature family /<br/>add source"]
-    INT --> EVAL["Out-of-time<br/>evaluation"]
-    EVAL --> ABL["Ablation<br/>what caused it"]
-    ABL --> ROB["Robustness<br/>ER noise, outages"]
-    ROB --> SCALE["Scalability"]
-    SCALE --> REP["Report<br/>incl. negative results"]
-```
+![Research workflow: a research question flows through dataset, experimental protocol, baselines,
+intervention, out-of-time evaluation, ablation, robustness and report. Two stages are done, the
+question itself is the study's starting point, and the rest have no artifact yet. A feedback arrow
+returns from the report stage to the research question.](docs/figures/research-workflow.png)
+
+*Nine stages from question to report. A result that cannot change the framing was not worth
+running - which is what the feedback arrow back to the research question records.*
 
 ## 8. Multi-source integration
 
-```mermaid
-flowchart TB
-    A["transit_feed<br/>snake_case, epoch offsets,<br/>no location"] --> AD1["adapter A"]
-    B["sensor_grid<br/>camelCase, local tz,<br/>imprecise timestamps"] --> AD2["adapter B"]
-    C["ops_log<br/>free text, categories"] --> AD3["adapter C"]
-    D["billing_extract<br/>ids, delayed arrival"] --> AD4["adapter D"]
-    AD1 --> CAN["Canonical contract<br/>event_id, timestamp,<br/>entity_ref_norm,<br/>event_type, source_id"]
-    AD2 --> CAN
-    AD3 --> CAN
-    AD4 --> CAN
-    CAN --> ER["Entity resolution"]
-    ER --> SHARED["Shared analytical<br/>representation"]
-```
+![Data integration: transit_feed, sensor_grid, ops_log and billing_extract carry four mutually
+incompatible native schemas. They merge into a single Adapters stage, then into the canonical
+representation, then entity resolution, and finally into one unified analytical view of 504
+clusters for 500 true entities at precision 0.996 and recall 0.997.
+](docs/figures/data-integration.png)
+
+*Four sources that disagree about identity, time and units, resolved into one analytical view.*
+*Every arrow above is a modelling decision: a time origin, an identity rule, a unit convention.*
 
 The four native schemas are deliberately incompatible. Each adapter's `normalize`
 is the only place that knows its source's conventions, and a single shared
@@ -358,14 +348,14 @@ passes.
 
 ## 11. Temporal leakage model
 
-```mermaid
-flowchart LR
-    BT["Backtest<br/>(within train)"] --> TR["Train<br/>fit baselines,<br/>fit models"]
-    TR --> VA["Validation<br/>select thresholds"]
-    VA --> FW["Forward / holdout<br/>scored only,<br/>never fitted"]
-    VA -. "information may never<br/>travel backwards" .-> X["forbidden"]
-    FW -. "nothing is fitted here" .-> X
-```
+![Temporal leakage model: backtest inside the train period, then train, then validation, then a
+forward holdout that is scored only and never fitted. A dashed red arrow marks the forbidden
+direction - fitting on the forward period or applying a forward-fitted artifact backwards - and a
+timeline from earliest to latest fixes the direction of time.
+](docs/figures/temporal-leakage.png)
+
+*Information may flow forward through time, and only forward. Random train/test splits are not
+used as a primary evaluation method anywhere in this project.*
 
 `experiments/protocol.py` is the single source of every split. Fitted artifacts
 carry a `FittedOn` stamp and **raise `LeakageError`** if applied to a period
@@ -379,15 +369,14 @@ clustering values are bit-identical and the PageRank ranking is unchanged.
 
 ## 12. Graph methodology
 
-```mermaid
-flowchart TB
-    EV["Events with canonical<br/>entity_id and peers"] --> EDG["Edge list<br/>first_seen = first<br/>observation time"]
-    EDG --> SNAP["Snapshot at cutoff T<br/>only edges with first_seen <= T"]
-    SNAP --> MEAS["Measures<br/>in/out + weighted degree<br/>PageRank · betweenness<br/>clustering · community"]
-    MEAS --> GF["graph_* features"]
-    EDG --> CHG["Graph-change features<br/>new neighbours,<br/>new-neighbour ratio,<br/>recent-neighbour count"]
-    CHG --> GF
-```
+![Graph methodology: the top band is the permitted construction - events with canonical entity ids
+and peers become an edge list stamped with first_seen, replayed to a cutoff T keeping only edges
+with first_seen at or before T, then measured. The lower band is the forbidden shortcut - all events
+at once in one global graph, measured whole, producing a silent leak because degree, PageRank and
+community then contain edges first seen later.](docs/figures/graph-methodology.png)
+
+*A snapshot at T contains only edges first seen at or before T. A relationship observed in the
+future cannot inform a historical measurement.*
 
 Measures: in/out and weighted degree, PageRank, betweenness centrality, clustering
 coefficient, and community assignment. Betweenness is computed on a subset of
@@ -402,16 +391,15 @@ constrains which graph features are worth computing at all.
 
 ## 13. Evidence lineage
 
-```mermaid
-flowchart LR
-    SRC["Source record"] --> EVT["Canonical event"]
-    EVT --> FEAT["Feature value<br/>+ registry fingerprint"]
-    FEAT --> MDL["Model"]
-    MDL --> SC["Score"]
-    SC --> AN["Anomaly"]
-    AN --> WHY["Explanation<br/>contributing features"]
-    WHY --> EXP["Experiment record"]
-```
+![Evidence lineage: a source record becomes a canonical event, then a feature value carrying a
+registry fingerprint, then a model, score, anomaly, explanation and finally an experiment record.
+A full-width evidence store below holds one row per score - contributing feature values, model
+weights and run fingerprint - and dashed lines tie every stage back to it, so an anomaly can be
+walked back to its source records and forward to the experiment that measured it.
+](docs/figures/evidence-lineage.png)
+
+*The evidence store is the join between a score and the rows that produced it. It is not
+implemented yet.*
 
 The intended property is that any anomaly can be walked backwards to the source
 records that produced it, and forwards to the experiment that measured it. The

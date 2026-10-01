@@ -1081,7 +1081,10 @@ def temporal_leakage(out_path: str | Path) -> str:
             ("scored only — nothing is fitted here", ORANGE, IMPLEMENTED),
             ("this direction is forbidden", RED, FORBIDDEN),
         ],
-        loc="lower left",
+        # lower left collided with the "earliest" axis label (y 0.144..0.176) and
+        # the italic note (x 0.186..0.814, y 0.059..0.091): the legend box spanned
+        # x 0.006..0.292, y 0.036..0.180 and overlapped both.
+        loc="upper right",
     )
     ax.set_ylim(0.02, 1.0)
     return _finish(fig, ax, Path(out_path))
