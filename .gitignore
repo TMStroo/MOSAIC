@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+.python-version
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+
+# Secrets / local config
+.env
+*.pem
+secrets/
+
+# Data (regenerable: `mosaic data generate`)
+data/raw/**
+data/interim/**
+data/processed/**
+data/manifests/*.json
+data/synthetic/**
+!data/**/.gitkeep
+!data/manifests/.gitkeep
+
+# Generated artifacts (regenerate via `mosaic experiment run`)
+results/experiments/**
+results/figures/**
+results/tables/**
+results/scaling/**
+results/benchmarks/**
+reports/generated/**
+!results/**/.gitkeep
+!reports/generated/.gitkeep
+
+# Search index / app state
+var/
+*.sqlite
+*.sqlite-journal
+
+# Node
+node_modules/
+frontend/dist/
+frontend/.vite/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
