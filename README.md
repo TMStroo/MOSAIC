@@ -256,39 +256,16 @@ listed so the eventual result — including a negative one — has somewhere to 
 
 ## 6. System architecture
 
-```mermaid
-flowchart TB
-    subgraph S["Sources"]
-        S1["Source A<br/>transit_feed"]
-        S2["Source B<br/>sensor_grid"]
-        S3["Source C<br/>ops_log"]
-        S4["Source D<br/>billing_extract"]
-    end
-    S1 --> AD[Adapters]
-    S2 --> AD
-    S3 --> AD
-    S4 --> AD
-    AD --> RAW[("Raw Parquet<br/>+ provenance")]
-    RAW --> VAL["Validation<br/>non-destructive"]
-    VAL --> CLEAN["Cleaning<br/>named steps + ledger"]
-    CLEAN --> ER["Entity resolution<br/>blocking → match → cluster"]
-    ER --> CANON["Canonical events<br/>+ entity_id"]
-    CANON --> SPLIT["Chronological splits<br/>(single source of truth)"]
-    SPLIT --> FEAT["Feature framework<br/>8 causal families"]
-    CANON --> TG["Temporal graph<br/>causal snapshots"]
-    TG --> FEAT
-    FEAT --> REG[("Feature registry<br/>lineage + leakage class")]
-    FEAT --> STAT["Statistical<br/>baselines"]
-    FEAT --> ML["ML models"]
-    STAT --> DET["Anomaly detection"]
-    ML --> DET
-    DET --> FUSE["Evidence fusion"]
-    FUSE --> EXPLAIN["Explainability"]
-    EXPLAIN --> EVID[("Evidence store<br/>score → features → events")]
-    EVID --> API["Search API"]
-    API --> UI["Analytical UI"]
-    REG -.fingerprint.-> ML
-```
+![MOSAIC system architecture: four deliberately incompatible sources feed a data layer of
+adapters, validation, cleaning, entity resolution and chronological splits; a research layer
+of causal features, the temporal graph and the feature registry feeds a designed baselines and
+ML stage; a delivery band of detection, fusion, explainability, evidence store, search API and
+analytical UI is designed but not yet built. A dashed arrow links the evidence store back to the
+feature registry.](docs/figures/architecture.png)
+
+*The system in four bands. Blue stages are implemented, executed and tested; grey stages are
+designed for but not yet built. The dashed arrow is the evidence store writing the events behind
+each score back into the feature registry, which is what makes an explanation traceable.*
 
 Stages shown as detectors, fusion, API and UI are **not yet implemented**.
 

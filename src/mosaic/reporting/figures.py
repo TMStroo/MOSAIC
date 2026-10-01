@@ -385,11 +385,15 @@ def _band_around(
     # band instead put it in the gap belonging to the PREVIOUS band: band 2's
     # caption landed at y=0.771, inside band 1's box row (0.735-0.833), where the
     # boxes drew over it. A caption must be positioned relative to its own boxes.
+    # Anchored at the band's TOP-RIGHT. At the top-left it sat in the corridor the
+    # connectors entering from above must cross, and at the bottom-left it sat in
+    # the corridor the hand-off bus runs along. The top-right corner of every band
+    # in this figure is empty.
     ax.text(
-        left + 0.006,
-        top - 0.016,
+        right - 0.006,
+        top - 0.010,
         label.upper(),
-        ha="left",
+        ha="right",
         va="top",
         fontsize=6.8,
         fontweight="bold",
@@ -450,7 +454,6 @@ def _multiline_box(
 
     block_h = head_h + (gap + lines * line_h if lines else 0.0)
     h = max(h, block_h + 2 * pad)
-    top = y + h
     block_top = y + pad + block_h
 
     ax.add_patch(
@@ -627,12 +630,24 @@ def architecture(out_path: str | Path) -> str:
     # straight through the note text of the row it feeds. The notes are the last
     # thing in the box, so the only clear corridor below a row is outside the band.
     feed_y = res_boxes[0][1] - 0.052
-    ax.plot([splits_cx, splits_cx], [pipe_boxes[0][1] - 0.030, feed_y], color=BLUE, linewidth=1.15, zorder=2)
+    # splits_cx is the SPLITS box centre in band 2; the drop has to clear band 3's
+    # own box row on the way to the bus below it. pipe_boxes[0][1] - 0.030 is
+    # y=0.490, which is inside band 3 (boxes 0.330..0.428), so the shaft ran down
+    # through the ML models label. Stop the vertical just above the bus instead.
+    ax.plot([splits_cx, splits_cx], [feed_y, feed_y + 0.030], color=BLUE, linewidth=1.15, zorder=2)
     ax.plot([splits_cx, graph_cx], [feed_y, feed_y], color=BLUE, linewidth=1.15, zorder=2)
     ax.plot([features_cx, graph_cx], [feed_y, feed_y], color=BLUE, linewidth=1.15, zorder=2)
-    _arrow(ax, graph_cx, feed_y, graph_cx, res_boxes[0][1] + res_boxes[0][3] + 0.006, color=BLUE, rad=0.0)
-    _arrow(ax, graph_cx, res_boxes[0][1] + 0.006, graph_cx, res_boxes[0][1], color=BLUE)
-    _arrow(ax, features_cx, res_boxes[0][1] + 0.006, features_cx, res_boxes[0][1], color=BLUE)
+    # One arrow per target, each spanning from the bus down to the box TOP. The
+    # previous version ran a single long arrow to box_top + 0.006 and then added a
+    # 0.006 stub from box_bottom + 0.006 back to box_bottom: that stub sat *inside*
+    # the box, drawing a tick across the label, and the long arrow's shrink left it
+    # spanning the box interior.
+    # feed_y is BELOW this row, so the arrow rises from the bus to the box BOTTOM.
+    # Ending it at the box top drew the shaft straight through the label and its
+    # note (a 0.15-tall arrow crossing 0.33-0.428).
+    res_bot = res_boxes[0][1]
+    _arrow(ax, graph_cx, feed_y, graph_cx, res_bot, color=BLUE, rad=0.0)
+    _arrow(ax, features_cx, feed_y, features_cx, res_bot, color=BLUE, rad=0.0)
 
     # --- row 4: delivery, all planned
     del_boxes = row(
@@ -653,12 +668,30 @@ def architecture(out_path: str | Path) -> str:
     for i in range(1, 6):
         _arrow(ax, del_boxes[i - 1][0] + del_w, del_boxes[0][1] + del_boxes[0][3] / 2, del_boxes[i][0], del_boxes[0][1] + del_boxes[0][3] / 2, color=GREY)
 
+    # The Evidence store is the only delivery stage that writes BACK into the
+    # implemented research layer: it records the events behind every score, which
+    # is what makes an explanation traceable. Dashed so it is not read as part of
+    # the left-to-right delivery chain it sits inside.
+    # It must physically reach the research layer, so the target is the research
+    # band's own floor, not the hand-off bus (which sits below that band). The
+    # arrow is drawn after the boxes, so the short span through the band gap is
+    # what is visible; routing it up the right-hand clear margin keeps it off text.
+    ev_x = del_boxes[3][0] + del_w / 2
+    ev_top = del_boxes[0][1] + del_boxes[0][3]
+    _arrow(ax, ev_x, ev_top + 0.010, ev_x, res_boxes[0][1] - 0.010, color=GREY, rad=0.0, ls=(0, (3, 2)))
+
     # The delivery row is fed from the models, not from the implemented baselines:
     # the pipeline it depends on is the planned one.
     models_cx = res_boxes[4][0] + res_w / 2
     detection_cx = del_boxes[0][0] + del_w / 2
-    hand_y = 0.222
-    ax.plot([models_cx, models_cx], [0.330 - 0.030, hand_y], color=GREY, linewidth=1.15, zorder=2)
+    # The delivery band caption occupies y 0.204..0.222 at x 0.018..0.272, so a
+    # hand-off bus at hand_y = 0.222 drew straight through the caption text. Route
+    # it in the empty floor of the band, below the caption.
+    hand_y = 0.252
+    # Start the drop at the ML box BOTTOM. 0.330 - 0.030 is above the box top
+    # (0.428), so the shaft ran down through the "ML models" label and its note.
+    res_bot_y = res_boxes[0][1]
+    ax.plot([models_cx, models_cx], [res_bot_y - 0.006, hand_y], color=GREY, linewidth=1.15, zorder=2)
     ax.plot([models_cx, detection_cx], [hand_y, hand_y], color=GREY, linewidth=1.15, zorder=2)
     _arrow(ax, detection_cx, hand_y, detection_cx, 0.078 + H, color=GREY)
 
