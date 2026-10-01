@@ -80,6 +80,47 @@ def _edge(kind: str) -> str:
     }[kind]
 
 
+def _pt(ax, points: float) -> float:
+    """Convert a font size in points into axes units.
+
+    Axes units are not points: on an 11x5 inch figure one point is roughly 0.0026
+    axes units. Hard-coding 1/72 overstates every text height by more than 5x and
+    silently pushes captions outside their boxes, so the scale is read from the
+    live transform instead.
+    """
+    fig = ax.figure
+    fig.canvas.draw()
+    y0 = ax.transData.inverted().transform((0.0, 0.0))[1]
+    y1 = ax.transData.inverted().transform((0.0, 100.0))[1]
+    return abs(y1 - y0) / 100.0 * points
+
+
+def _text_height(ax, size: float) -> float:
+    """Height in axes units of one rendered line at ``size`` points.
+
+    Measured from the renderer rather than derived from the em square: matplotlib's
+    text extent includes ascent and descent and is noticeably taller than
+    size/72 in axes units. Estimating it put captions on top of their headings.
+    """
+    fig = ax.figure
+    probe = ax.text(
+        0.0,
+        0.0,
+        "Ag",
+        fontsize=size,
+        ha="left",
+        va="baseline",
+        alpha=0.0,
+    )
+    fig.canvas.draw()
+    bb = probe.get_window_extent()
+    inv = ax.transData.inverted()
+    (_, y0) = inv.transform((bb.x0, bb.y0))
+    (_, y1) = inv.transform((bb.x1, bb.y1))
+    probe.remove()
+    return abs(y1 - y0)
+
+
 def _box(
     ax,
     x: float,
@@ -294,9 +335,26 @@ def _multiline_box(
 ) -> None:
     """A box whose explanatory note lives INSIDE it.
 
-    Notes placed beside a box are inevitably crossed by the connector that runs
-    past them, so they go inside where nothing can overlap them.
+    Notes placed beside a box are inevitably crossed by the connector that runs past
+    them, so they go inside where nothing can overlap them.
+
+    ``h`` is treated as a MINIMUM: the box grows when the note wraps to more lines
+    than the height allows. Sizing a box to a fixed height while its caption wraps
+    to three lines is what pushes the last line through the bottom border.
     """
+    lines = note.count("\n") + 1 if note else 0
+    # Measured, not estimated: a single 6.6pt line occupies ~1.8x the em box, so
+    # deriving the height from font size alone understates it and overlaps the text.
+    line_h = _text_height(ax, note_size) * 1.45
+    head_h = _text_height(ax, head_size) * 1.30
+    pad = _pt(ax, 4.0)
+    block_h = head_h + (lines * line_h if lines else 0.0)
+    needed = block_h + 2 * pad
+    h = max(h, needed)
+    # Centre the head+note block vertically. Anchoring the note to the box bottom
+    # instead makes a box that is TALLER than needed push its own caption outside.
+    block_bottom = y + (h - block_h) / 2
+
     ax.add_patch(
         FancyBboxPatch(
             (x, y),
@@ -309,28 +367,43 @@ def _multiline_box(
             zorder=zorder,
         )
     )
-    ax.text(
-        x + w / 2,
-        y + h * 0.68,
-        head,
-        ha="center",
-        va="center",
-        fontsize=head_size,
-        fontweight="bold",
-        color=INK if kind != PLANNED else "#5c6470",
-        zorder=zorder + 1,
-    )
-    ax.text(
-        x + w / 2,
-        y + h * 0.28,
-        note,
-        ha="center",
-        va="center",
-        fontsize=note_size,
-        color="#7c848f",
-        linespacing=1.35,
-        zorder=zorder + 1,
-    )
+    if lines:
+        ax.text(
+            x + w / 2,
+            block_bottom + block_h - head_h / 2,
+            head,
+            ha="center",
+            va="center",
+            fontsize=head_size,
+            fontweight="bold",
+            color=INK if kind != PLANNED else "#5c6470",
+            zorder=zorder + 1,
+        )
+        # va="top", not "center": matplotlib expands a multi-line block upward from
+        # the anchor, so centring it places the first line over the heading.
+        ax.text(
+            x + w / 2,
+            block_bottom + head_h + lines * line_h,
+            note,
+            ha="center",
+            va="top",
+            fontsize=note_size,
+            color="#7c848f",
+            linespacing=1.42,
+            zorder=zorder + 1,
+        )
+    else:
+        ax.text(
+            x + w / 2,
+            block_bottom + block_h / 2,
+            head,
+            ha="center",
+            va="center",
+            fontsize=head_size,
+            fontweight="bold",
+            color=INK if kind != PLANNED else "#5c6470",
+            zorder=zorder + 1,
+        )
 
 
 def architecture(out_path: str | Path) -> str:
@@ -387,7 +460,6 @@ def architecture(out_path: str | Path) -> str:
     )
     _band_around(ax, pipe_boxes, label="Data layer — implemented and executed")
     _, pipe_w, _ = pipe_boxes[0]
-    pipe_stride = pipe_w + 0.024
     for i in range(1, 5):
         x0 = pipe_boxes[i - 1][0]
         _arrow(ax, x0 + pipe_w, 0.556 + H / 2, pipe_boxes[i][0], 0.556 + H / 2)
@@ -449,7 +521,6 @@ def architecture(out_path: str | Path) -> str:
     )
     _band_around(ax, del_boxes, label="Delivery — designed for, not yet built", pad_bot=0.034)
     del_w = del_boxes[0][1]
-    del_stride = del_w + 0.018
     for i in range(1, 6):
         _arrow(ax, del_boxes[i - 1][0] + del_w, 0.078 + H / 2, del_boxes[i][0], 0.078 + H / 2, color=GREY)
 
@@ -558,72 +629,118 @@ def research_workflow(out_path: str | Path) -> str:
 def data_integration(out_path: str | Path) -> str:
     """Why the pipeline starts from incompatible sources.
 
-    The point is that the sources do not merely differ in field names — they
-    disagree about identity, time and units, which is what makes integration a
-    modelling decision rather than a concatenation.
+    The point is not that the sources differ in field names — they disagree about
+    identity, time and units, which is what makes integration a modelling decision
+    rather than a concatenation.
     """
     _style()
-    fig, ax = plt.subplots(figsize=(10.6, 4.6))
+    fig, ax = plt.subplots(figsize=(11.0, 5.0))
     _title(fig, "Four sources that disagree about identity, time and units")
     _subtitle(
         fig,
         "Canonicalization is where information is discarded. Raw records are kept so every decision stays reversible.",
     )
 
+    H = 0.150
+
+    # --- four incompatible sources, full width so no caption can be occluded
+    src_y = 0.700
     src = [
         ("transit_feed", "snake_case fields\nepoch-second stamps\nno location"),
         ("sensor_grid", "camelCase fields\nlocal timezone\nimprecise minutes"),
         ("ops_log", "free-text categories\narrival-time ordered\nno units"),
-        ("billing_extract", "prefixed identifiers\ndelayed by ~2 days\nmoney as text"),
+        ("billing_extract", "prefixed identifiers\ndelayed ~2 days\nmoney as text"),
     ]
-    x = 0.020
-    for name, note in src:
-        _box(ax, x, 0.640, 0.170, 0.190, name, weight="bold", size=8.2)
-        ax.text(
-            x + 0.085,
-            0.615,
-            note,
-            ha="center",
-            va="top",
-            fontsize=6.9,
-            color="#7c848f",
-            linespacing=1.45,
-        )
-        _arrow(ax, x + 0.085, 0.640, 0.330, 0.470)
-        x += 0.208
+    w, stride = _row(len(src), gap=0.036)
+    src_boxes: list[tuple[float, float, float]] = []
+    for i, (head, note) in enumerate(src):
+        x = 0.028 + i * stride
+        _multiline_box(ax, x, src_y, w, H, head, note, head_size=8.2, note_size=6.6)
+        src_boxes.append((x, src_y, w))
+    _band_around(ax, src_boxes, label="Native schemas — mutually incompatible", pad_bot=0.030)
 
-    _box(ax, 0.255, 0.360, 0.290, 0.110, "Adapters — the only place that knows\neach source's conventions", size=8.0)
-    _arrow(ax, 0.400, 0.360, 0.400, 0.268)
+    # --- merge on a bus below the sources so no connector crosses a caption
+    bus_y = src_y - 0.058
+    adapters_w = 0.300
+    adapters_x = 0.028 + (1.0 - 0.028 - 0.030 - adapters_w) / 2
+    adapters_cx = adapters_x + adapters_w / 2
+    for x, _y, bw in src_boxes:
+        cx = x + bw / 2
+        ax.plot([cx, cx], [src_y - 0.030, bus_y], color="#c2c8d1", linewidth=1.0, zorder=1)
+        ax.plot([cx, adapters_cx], [bus_y, bus_y], color="#c2c8d1", linewidth=1.0, zorder=1)
+    _arrow(ax, adapters_cx, bus_y, adapters_cx, src_y - 0.098, color=BLUE)
 
-    _box(
+    # --- adapters
+    ad_y = src_y - 0.200
+    _multiline_box(
         ax,
-        0.150,
-        0.130,
-        0.500,
-        0.138,
-        "Canonical representation\nevent_id · timestamp · entity_ref_norm\n"
-        "event_type · source_id · provenance kept",
-        weight="bold",
-        size=8.0,
+        adapters_x,
+        ad_y,
+        adapters_w,
+        0.100,
+        "Adapters",
+        "the only place that knows\neach source's conventions",
+        head_size=8.2,
+        note_size=6.7,
     )
-    _arrow(ax, 0.640, 0.130, 0.790, 0.130)
+    _arrow(ax, adapters_cx, ad_y, adapters_cx, ad_y - 0.050, color=BLUE)
 
-    _box(ax, 0.715, 0.400, 0.265, 0.140, "Entity resolution\nblocking → match → cluster", size=8.0)
-    _arrow(ax, 0.400, 0.268, 0.715, 0.470)
-    _box(ax, 0.715, 0.140, 0.265, 0.130, "Unified analytical\nrepresentation\n504 clusters / 500 true", weight="bold", size=8.0)
-    _arrow(ax, 0.847, 0.400, 0.847, 0.270, color=ORANGE)
+    # --- canonical representation, then entity resolution, then the unified view.
+    # Three columns on one baseline. The earlier version overlapped them in BOTH
+    # axes, which put the ER title through the canonical box's border.
+    canon_y = ad_y - 0.185
+    col_w, col_gap = 0.290, 0.035
+    col_x = [0.028 + i * (col_w + col_gap) for i in range(3)]
+    for cx_, cw_ in zip(col_x, [col_w] * 3, strict=True):
+        assert cx_ + cw_ <= 1.0 - 0.030 + 1e-9, "column escapes canvas"
 
-    # the lossy decisions, called out because they are where errors enter
+    _multiline_box(
+        ax,
+        col_x[0],
+        canon_y,
+        col_w,
+        0.155,
+        "Canonical representation",
+        "event_id · timestamp\nentity_ref_norm · event_type\nsource_id · provenance kept",
+        head_size=7.8,
+        note_size=6.4,
+    )
+    _multiline_box(
+        ax,
+        col_x[1],
+        canon_y,
+        col_w,
+        0.155,
+        "Entity resolution",
+        "blocking → match → cluster\nsame entity, four name styles",
+        head_size=7.8,
+        note_size=6.4,
+    )
+    _multiline_box(
+        ax,
+        col_x[2],
+        canon_y,
+        col_w,
+        0.155,
+        "Unified analytical view",
+        "504 clusters\nfor 500 true entities\nP=0.996, R=0.997",
+        head_size=7.8,
+        note_size=6.4,
+    )
+    _arrow(ax, col_x[0] + col_w, canon_y + 0.0775, col_x[1], canon_y + 0.0775, color=BLUE)
+    _arrow(ax, col_x[1] + col_w, canon_y + 0.0775, col_x[2], canon_y + 0.0775, color=ORANGE)
+
     ax.text(
-        0.400,
-        0.055,
+        0.500,
+        0.040,
         "Every arrow above is a modelling decision: a time origin, an identity rule, a unit convention.",
         ha="center",
         va="center",
-        fontsize=7.6,
+        fontsize=7.8,
         color=RED,
         style="italic",
     )
+    ax.set_ylim(0.01, 1.0)
     return _finish(fig, ax, Path(out_path))
 
 
@@ -789,7 +906,8 @@ def graph_methodology(out_path: str | Path) -> str:
     )
     _band_around(ax, top_boxes, label="Temporal construction — what MOSAIC does", pad_bot=0.105)
     graph_cx = top_boxes[2][0] + top_boxes[2][2] / 2
-    summary_w, _ = _row(1, gap=0.0)
+    # Cap the summary bar so it cannot run flush against the band edge.
+    summary_w = 0.560
     summary_x = graph_cx - summary_w / 2
     summary_y = top_y - 0.086
     _multiline_box(
