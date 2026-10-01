@@ -112,6 +112,24 @@ def _pt(ax, points: float) -> float:
     return abs(y1 - y0) / 100.0 * points
 
 
+def _new_canvas(width: float, height: float, *, ylim: tuple[float, float] = (0.0, 1.0)):
+    """Create the figure with its data limits already frozen.
+
+    Every height in this module is measured by rendering a probe and converting
+    its extent through the axes transform. That conversion is only meaningful if
+    the limits are already final: matplotlib autoscales as artists are added, so
+    a measurement taken halfway through a figure is on a different scale from one
+    taken at the end. Freezing the limits here means a box measured while drawing
+    the source row and a caption measured while drawing the bottom row are on the
+    same scale.
+    """
+    _style()
+    fig, ax = plt.subplots(figsize=(width, height))
+    ax.set_xlim(0.0, 1.0)
+    ax.set_ylim(*ylim)
+    return fig, ax
+
+
 def _text_height(ax, size: float) -> float:
     """Height in axes units of one rendered line at ``size`` points.
 
@@ -299,13 +317,37 @@ def _finish(fig, ax, out_path: Path) -> str:
 
 
 # --------------------------------------------------------------------- figures
+def _measure_multiline(ax, head: str, note: str, *, head_size: float, note_size: float) -> float:
+    """Height ``_multiline_box`` would use for this head+note, without drawing.
+
+    Lets a row take the height of its tallest member so every box in the row is
+    the same size and no caption grows into the row beneath it.
+    """
+    lines = note.count("\n") + 1 if note else 0
+    head_h = _text_height(ax, head_size) * 1.32
+    line_h = _text_height(ax, note_size) * 1.46 if lines else 0.0
+    block = head_h + (_pt(ax, 2.2) + lines * line_h if lines else 0.0)
+    return block + 2 * _pt(ax, 4.5)
+
+
+def _measure_block(ax, text: str, *, size: float, leading: float = 1.52) -> float:
+    """Height a single multi-line string needs, plus padding.
+
+    ``_measure_multiline`` sizes a heading and a caption drawn at different sizes.
+    Boxes that draw head+note as one string need this instead.
+    """
+    lines = text.count("\n") + 1 if text else 0
+    body = lines * _text_height(ax, size) * leading if lines else 0.0
+    return body + 2 * _pt(ax, 5.0)
+
+
 def _band_around(
     ax,
     boxes: list[tuple[float, float, float]],
     *,
     label: str,
     pad_x: float = 0.016,
-    pad_top: float = 0.052,
+    pad_top: float = 0.072,
     pad_bot: float = 0.030,
 ) -> tuple[float, float, float]:
     """Draw a band that provably contains the boxes given.
@@ -330,12 +372,14 @@ def _band_around(
             zorder=0,
         )
     )
+    # Above the band, not inside it: a snug band left the caption sitting on the
+    # top edge of the tallest box, which reads as a collision at README size.
     ax.text(
         left + 0.006,
-        top - 0.014,
+        top + 0.010,
         label.upper(),
         ha="left",
-        va="top",
+        va="bottom",
         fontsize=6.8,
         fontweight="bold",
         color="#8b93a1",
@@ -443,7 +487,7 @@ def architecture(out_path: str | Path) -> str:
     the implemented system stops at features and graphs.
     """
     _style()
-    fig, ax = plt.subplots(figsize=(11.4, 7.0))
+    fig, ax = _new_canvas(11.4, 7.0)
     _title(fig, "MOSAIC: sources in, ranked anomalies and traceable evidence out")
     _subtitle(
         fig,
@@ -463,7 +507,7 @@ def architecture(out_path: str | Path) -> str:
 
     # --- row 1: four deliberately incompatible sources
     src_boxes = row(
-        0.762,
+        0.735,
         [
             ("transit_feed", "snake_case fields\nepoch-second stamps", IMPLEMENTED),
             ("sensor_grid", "camelCase fields\nlocal timezone", IMPLEMENTED),
@@ -477,7 +521,7 @@ def architecture(out_path: str | Path) -> str:
 
     # --- row 2: ingestion through splits
     pipe_boxes = row(
-        0.556,
+        0.520,
         [
             ("Adapters", "native → canonical", IMPLEMENTED),
             ("Validation", "0 FAIL, q=0.95", IMPLEMENTED),
@@ -581,8 +625,7 @@ def research_workflow(out_path: str | Path) -> str:
     The loop back to the research question is deliberate: an experiment that
     cannot change the framing was not worth running.
     """
-    _style()
-    fig, ax = plt.subplots(figsize=(10.4, 3.5))
+    fig, ax = _new_canvas(10.4, 3.5)
     _title(fig, "From research question to a claim that survives its own ablations")
     _subtitle(
         fig,
@@ -591,9 +634,9 @@ def research_workflow(out_path: str | Path) -> str:
 
     steps = [
         ("Research\nquestion", ORANGE),
-        ("Dataset\nsynthetic + public", BLUE),
+        ("Dataset\nsynthetic\n+ public", BLUE),
         ("Protocol\nchronological\nsplits", BLUE),
-        ("Baselines\nstatistical + ML", GREY),
+        ("Baselines\nstatistical\n+ ML", GREY),
         ("Intervention\nadd family\nor source", GREY),
         ("Out-of-time\nevaluation", GREY),
         ("Ablation\nwhat caused\nit", GREY),
@@ -679,24 +722,14 @@ def research_workflow(out_path: str | Path) -> str:
 
 
 def data_integration(out_path: str | Path) -> str:
-    """Why the pipeline starts from incompatible sources.
-
-    The point is not that the sources differ in field names — they disagree about
-    identity, time and units, which is what makes integration a modelling decision
-    rather than a concatenation.
-    """
-    _style()
-    fig, ax = plt.subplots(figsize=(11.0, 5.0))
+    """Four sources that disagree, and the decisions that reconcile them."""
+    fig, ax = _new_canvas(11.0, 5.2)
     _title(fig, "Four sources that disagree about identity, time and units")
     _subtitle(
         fig,
         "Canonicalization is where information is discarded. Raw records are kept so every decision stays reversible.",
     )
 
-    H = 0.150
-
-    # --- four incompatible sources, full width so no caption can be occluded
-    src_y = 0.700
     src = [
         ("transit_feed", "snake_case fields\nepoch-second stamps\nno location"),
         ("sensor_grid", "camelCase fields\nlocal timezone\nimprecise minutes"),
@@ -704,10 +737,15 @@ def data_integration(out_path: str | Path) -> str:
         ("billing_extract", "prefixed identifiers\ndelayed ~2 days\nmoney as text"),
     ]
     w, stride = _row(len(src), gap=0.036)
+    src_h = max(
+        _measure_multiline(ax, head, note, head_size=8.2, note_size=6.6)
+        for head, note in src
+    )
+    src_y = 0.700
     src_boxes: list[tuple[float, float, float]] = []
     for i, (head, note) in enumerate(src):
         x = 0.028 + i * stride
-        _multiline_box(ax, x, src_y, w, H, head, note, head_size=8.2, note_size=6.6)
+        _multiline_box(ax, x, src_y, w, src_h, head, note, head_size=8.2, note_size=6.6)
         src_boxes.append((x, src_y, w))
     _band_around(ax, src_boxes, label="Native schemas — mutually incompatible", pad_bot=0.030)
 
@@ -723,74 +761,116 @@ def data_integration(out_path: str | Path) -> str:
     _arrow(ax, adapters_cx, bus_y, adapters_cx, src_y - 0.098, color=BLUE)
 
     # --- adapters
-    ad_y = src_y - 0.200
+    ad_note = "the only place that knows\neach source's conventions"
+    ad_h = _measure_multiline(ax, "Adapters", ad_note, head_size=8.2, note_size=6.7)
+    ad_y = bus_y - 0.070 - ad_h
     _multiline_box(
         ax,
         adapters_x,
         ad_y,
         adapters_w,
-        0.100,
+        ad_h,
         "Adapters",
-        "the only place that knows\neach source's conventions",
+        ad_note,
         head_size=8.2,
         note_size=6.7,
     )
-    _arrow(ax, adapters_cx, ad_y, adapters_cx, ad_y - 0.050, color=BLUE)
 
     # --- canonical representation, then entity resolution, then the unified view.
-    # Three columns on one baseline. The earlier version overlapped them in BOTH
-    # axes, which put the ER title through the canonical box's border.
-    canon_y = ad_y - 0.185
+    # Row heights are measured, not assumed: a fixed per-row offset let a taller
+    # caption grow downward into the row below and land outside its own border.
+    cols = [
+        (
+            "Canonical representation",
+            "event_id · timestamp\nentity_ref_norm · event_type\nsource_id · provenance kept",
+            BLUE,
+        ),
+        (
+            "Entity resolution",
+            "blocking → match → cluster\nsame entity, four name styles",
+            BLUE,
+        ),
+        (
+            "Unified analytical view",
+            "504 clusters\nfor 500 true entities\nP=0.996, R=0.997",
+            ORANGE,
+        ),
+    ]
     col_w, col_gap = 0.290, 0.035
     col_x = [0.028 + i * (col_w + col_gap) for i in range(3)]
     for cx_, cw_ in zip(col_x, [col_w] * 3, strict=True):
         assert cx_ + cw_ <= 1.0 - 0.030 + 1e-9, "column escapes canvas"
 
-    _multiline_box(
-        ax,
-        col_x[0],
-        canon_y,
-        col_w,
-        0.155,
-        "Canonical representation",
-        "event_id · timestamp\nentity_ref_norm · event_type\nsource_id · provenance kept",
-        head_size=7.8,
-        note_size=6.4,
+    # Measured for the combined head+note string these boxes actually draw.
+    col_h = max(
+        _measure_block(ax, f"{head}\n{note}", size=7.2) for head, note, _c in cols
     )
-    _multiline_box(
-        ax,
-        col_x[1],
-        canon_y,
-        col_w,
-        0.155,
-        "Entity resolution",
-        "blocking → match → cluster\nsame entity, four name styles",
-        head_size=7.8,
-        note_size=6.4,
+    foot_y = 0.048
+    col_y = foot_y + 0.058
+    col_cy = col_y + col_h / 2
+
+    for cx_, (head, note, color) in zip(col_x, cols, strict=True):
+        ax.add_patch(
+            FancyBboxPatch(
+                (cx_, col_y),
+                col_w,
+                col_h,
+                boxstyle="round,pad=0.002,rounding_size=0.016",
+                linewidth=1.3,
+                edgecolor=color,
+                facecolor=_fill(IMPLEMENTED),
+                zorder=3,
+            )
+        )
+        ax.text(
+            cx_ + col_w / 2,
+            col_cy,
+            f"{head}\n{note}",
+            ha="center",
+            va="center",
+            fontsize=7.2,
+            fontweight="bold" if cx_ == col_x[0] else "normal",
+            color=INK if color == BLUE else "#5c6470",
+            linespacing=1.52,
+            zorder=4,
+        )
+    _arrow(ax, col_x[0] + col_w, col_cy, col_x[1], col_cy, color=BLUE)
+    _arrow(ax, col_x[1] + col_w, col_cy, col_x[2], col_cy, color=ORANGE)
+
+    # adapters feed the first column
+    ax.plot(
+        [adapters_cx, adapters_cx, col_x[0] + col_w / 2],
+        [ad_y, ad_y - 0.040, col_y + col_h],
+        color=BLUE,
+        linewidth=1.2,
+        zorder=2,
     )
-    _multiline_box(
+    _arrow(
         ax,
-        col_x[2],
-        canon_y,
-        col_w,
-        0.155,
-        "Unified analytical view",
-        "504 clusters\nfor 500 true entities\nP=0.996, R=0.997",
-        head_size=7.8,
-        note_size=6.4,
+        col_x[0] + col_w / 2,
+        col_y + col_h + 0.046,
+        col_x[0] + col_w / 2,
+        col_y + col_h,
+        color=BLUE,
     )
-    _arrow(ax, col_x[0] + col_w, canon_y + 0.0775, col_x[1], canon_y + 0.0775, color=BLUE)
-    _arrow(ax, col_x[1] + col_w, canon_y + 0.0775, col_x[2], canon_y + 0.0775, color=ORANGE)
 
     ax.text(
         0.500,
-        0.040,
+        foot_y,
         "Every arrow above is a modelling decision: a time origin, an identity rule, a unit convention.",
         ha="center",
         va="center",
         fontsize=7.8,
         color=RED,
         style="italic",
+    )
+    _legend(
+        ax,
+        [
+            ("implemented", BLUE, IMPLEMENTED),
+            ("the unified analytical view", ORANGE, IMPLEMENTED),
+        ],
+        loc="lower right",
     )
     ax.set_ylim(0.01, 1.0)
     return _finish(fig, ax, Path(out_path))
@@ -803,7 +883,7 @@ def temporal_leakage(out_path: str | Path) -> str:
     only thing this figure needs the reader to remember.
     """
     _style()
-    fig, ax = plt.subplots(figsize=(10.6, 4.3))
+    fig, ax = _new_canvas(10.6, 4.3)
     _title(fig, "Information may flow forward through time, and only forward")
     _subtitle(
         fig,
@@ -926,7 +1006,7 @@ def graph_methodology(out_path: str | Path) -> str:
     code that avoids it.
     """
     _style()
-    fig, ax = plt.subplots(figsize=(10.8, 5.6))
+    fig, ax = _new_canvas(10.8, 5.6)
     _title(fig, "A snapshot at T contains only edges first seen at or before T")
     _subtitle(
         fig,
@@ -1033,8 +1113,7 @@ def evidence_lineage(out_path: str | Path) -> str:
     only thing that connects a score back to the rows that produced it, so leaving
     it implicit made the figure's central claim invisible.
     """
-    _style()
-    fig, ax = plt.subplots(figsize=(11.6, 4.2))
+    fig, ax = _new_canvas(11.6, 4.2)
     _title(fig, "Any anomaly walks back to its source records and forward to the experiment that measured it")
     _subtitle(
         fig,

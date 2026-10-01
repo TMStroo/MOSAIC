@@ -380,3 +380,92 @@ def test_no_arrowhead_points_into_empty_space() -> None:
                 offenders.append(f"{name}: arrow tip {tuple(round(v, 3) for v in tip)} is {nearest:.2f} from every box")
         plt.close(fig)
     assert not offenders, "\n".join(offenders)
+
+
+def test_no_text_escapes_the_box_it_belongs_to() -> None:
+    """Every text artist is contained by the box it sits inside, in all six figures.
+
+    This is the check that catches the whole family of overflow bugs. Four
+    separate defects lived here: a caption overlapping its heading, a caption
+    falling through the bottom border, a centred multi-line label escaping
+    symmetrically out of a fixed-height box, and a caption growing downward into
+    the row below. Each was invisible until measured.
+    """
+    escapes: list[str] = []
+    for name, fn in ALL_FIGURES.items():
+        fig, captured = _capture(fn, name)
+        fig.canvas.draw()
+        rects = _rects(captured)
+        bands = _rects(captured, content_only=False)
+        band_set = {tuple(round(v, 4) for v in b) for b in bands if b[2] > 0.5}
+        for artist in captured.texts:
+            body = artist.get_text().strip()
+            if not body:
+                continue
+            y0, y1 = _extent_y(captured, artist)
+            x0, x1 = _extent_x(captured, artist)
+            # Containment is per-box, not against the figure's overall extent: a
+            # caption in the bottom row is contained by its own box even though it
+            # sits far below the topmost row.
+            containing = [
+                (rx, ry, rw, rh)
+                for rx, ry, rw, rh in rects
+                if y0 >= ry - 0.004
+                and y1 <= ry + rh + 0.004
+                and x0 >= rx - 0.004
+                and x1 <= rx + rw + 0.004
+            ]
+            if containing:
+                continue
+            # Not contained anywhere. Is it merely free-floating text (a title,
+            # subtitle or caption outside every box)? Only flag text that OVERLAPS
+            # a box without fitting inside it, which is what an escape looks like.
+            overlapping = [
+                (rx, ry, rw, rh)
+                for rx, ry, rw, rh in rects
+                if y1 > ry and y0 < ry + rh and x1 > rx and x0 < rx + rw
+            ]
+            if overlapping:
+                rx, ry, rw, rh = overlapping[0]
+                # A band caption belongs to its band, which is wider than every
+                # content box; judging it against a box it merely sits above is a
+                # false positive.
+                in_band = any(
+                    y0 >= by - 0.004
+                    and y1 <= by + bh + 0.004
+                    and x0 >= bx - 0.004
+                    and x1 <= bx + bw + 0.004
+                    for bx, by, bw, bh in bands
+                    if bw > 0.5
+                )
+                if in_band:
+                    continue
+                escapes.append(
+                    f"{name}: {body[:26]!r} overlaps but is not contained by the box "
+                    f"at [{rx:.3f},{ry:.3f},{rw:.3f},{rh:.3f}]; text spans "
+                    f"x=[{x0:.3f},{x1:.3f}] y=[{y0:.3f},{y1:.3f}]"
+                )
+        plt.close(fig)
+    assert not escapes, "\n".join(escapes)
+
+
+def test_multiline_box_returns_its_height() -> None:
+    """Callers lay out around boxes, so the used height has to come back."""
+    _fig, _f, ax = _axes()
+    h = _multiline_box(ax, 0.1, 0.4, 0.3, 0.02, "Head", "a\nb\nc\nd\ne")
+    fig = ax.figure
+    fig.canvas.draw()
+    (_x, y, _w, drawn) = _rects(ax)[0]
+    assert drawn == pytest.approx(h)
+    assert h > 0.02, "height must grow to fit five caption lines"
+    plt.close(fig)
+
+
+def test_plain_box_returns_its_height() -> None:
+    _fig, _f, ax = _axes()
+    h = _box(ax, 0.1, 0.4, 0.3, 0.02, "one\ntwo\nthree")
+    fig = ax.figure
+    fig.canvas.draw()
+    (_x, y, _w, drawn) = _rects(ax)[0]
+    assert drawn == pytest.approx(h)
+    plt.close(fig)
