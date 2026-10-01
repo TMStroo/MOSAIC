@@ -28,7 +28,7 @@ import logging
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 
 import networkx as nx
 import numpy as np
@@ -578,9 +578,7 @@ def add_graph_features(
 
 
 # --------------------------------------------------------------- invariants
-def assert_no_future_edges(
-    graph: TemporalGraph, cutoff: datetime, *, max_first_seen: datetime | None = None
-) -> None:
+def assert_no_future_edges(graph: TemporalGraph, cutoff: datetime) -> None:
     """Assert every edge in the snapshot at ``cutoff`` predates ``cutoff``.
 
     Cheap structural check (no measures computed) that the temporal invariant holds.
@@ -588,12 +586,17 @@ def assert_no_future_edges(
     visible = graph.edges_as_of(cutoff)
     if visible.is_empty():
         return
-    latest = visible["first_seen"].max()
-    if latest is not None and latest > cutoff:
+    # Narrow the Polars scalar to a real datetime before comparing: .max() is typed
+    # as a wide Any union, and comparing that to a datetime is meaningless.
+    latest_raw = visible["first_seen"].max()
+    if latest_raw is None:
+        return
+    latest = cast(datetime, latest_raw)
+    if latest > cutoff:
         offender = visible.filter(pl.col("first_seen") > cutoff).head(1)
         raise AssertionError(
-            f"leakage: snapshot at {cutoff} contains an edge first seen at {latest}: "
-            f"{offender.to_dicts()}"
+            f"leakage: snapshot at {cutoff} contains an edge first seen at "
+            f"{latest.isoformat()}: {offender.to_dicts()}"
         )
 
 
@@ -606,7 +609,7 @@ def temporal_community_stability(
     result to report, and computing it here keeps the feature path cheap.
     """
     out: list[dict[str, Any]] = []
-    previous: dict[str, int] | None = None
+    previous: dict[str, float] | None = None
     for when in sorted(cutoffs):
         measures = snapshot_measures(graph, when)
         current = {node: values["graph_community"] for node, values in measures.items()}
