@@ -18,10 +18,10 @@ from typing import Any, ClassVar
 import polars as pl
 
 from mosaic.ingestion.base import SourceAdapter
-from mosaic.schema.canonical import EventType
 from mosaic.ingestion.synthetic.generator import SOURCE_ID_STYLE, SOURCE_PLAN, SOURCE_SLUG
 from mosaic.ingestion.synthetic.render import NATIVE_COLUMNS
-from mosaic.ingestion.synthetic.vocabulary import CATEGORY_TO_EVENT_TYPE, canonical_event_type
+from mosaic.ingestion.synthetic.vocabulary import CATEGORY_TO_EVENT_TYPE
+from mosaic.schema.canonical import EventType
 
 
 def _map_categories_expr(column: pl.Expr, mapping: dict[str, str]) -> pl.Expr:

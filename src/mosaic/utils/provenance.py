@@ -7,6 +7,7 @@ software and machine that produced it. Values are read, never hard-coded.
 from __future__ import annotations
 
 import importlib.metadata as md
+import os
 import platform
 import subprocess
 import sys
@@ -34,8 +35,8 @@ TRACKED_PACKAGES = (
 
 def _run_git(*args: str, cwd: Path | None = None) -> str | None:
     try:
-        out = subprocess.run(  # noqa: S603
-            ["git", *args],  # noqa: S607
+        out = subprocess.run(
+            ["git", *args],
             cwd=str(cwd) if cwd else None,
             capture_output=True,
             text=True,
@@ -75,8 +76,6 @@ def code_version() -> str:
 @lru_cache(maxsize=1)
 def hardware_info() -> dict[str, Any]:
     """Machine description recorded with every scaling experiment."""
-    import os
-
     info: dict[str, Any] = {
         "platform": platform.platform(),
         "machine": platform.machine(),

@@ -30,7 +30,7 @@ import numpy as np
 import polars as pl
 
 from .base import ResolutionResult
-from .matchers import MATCHER_NAMES, MatcherName
+from .matchers import MATCHER_NAMES
 
 
 @dataclass(frozen=True)

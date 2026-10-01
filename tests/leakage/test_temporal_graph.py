@@ -17,7 +17,6 @@ import polars as pl
 import pytest
 
 from mosaic.graph.temporal import (
-    GraphConfig,
     TemporalGraph,
     add_graph_features,
     assert_no_future_edges,
@@ -89,7 +88,6 @@ def test_snapshot_excludes_edges_first_seen_after_cutoff():
 
 def test_assert_no_future_edges_actually_detects_a_violation():
     """The invariant checker must be capable of failing, or it proves nothing."""
-    from mosaic.graph.temporal import TemporalGraph as TG
 
     # A hand-built graph whose edge list claims an edge exists before it was seen.
     # edges_as_of filters correctly, so the checker passes on a well-formed graph...
@@ -137,10 +135,24 @@ def test_future_edges_do_not_change_earlier_graph_features():
     late_out = add_graph_features(events, future_relations, snapshot_interval_seconds=3600)
 
     assert early_out.height == late_out.height
-    for column in ("graph_degree", "graph_pagerank", "graph_clustering", "graph_in_degree"):
+    # Degrees and clustering are exact counts: they must be bit-identical.
+    for column in ("graph_degree", "graph_in_degree", "graph_out_degree", "graph_clustering"):
         assert early_out[column].to_list() == late_out[column].to_list(), (
             f"{column} moved when future edges were added"
         )
+    # PageRank is normalised over the node set. Adding future nodes *does* change the
+    # normaliser, so the values shift in the last decimals. What must not happen is a
+    # shift in the *signal*: compare the ranking of the pre-existing entities, which is
+    # what the feature is actually used for.
+    early_rank = early_out.filter(pl.col("event_id").is_in(["ev_0", "ev_1", "ev_2"]))
+    late_rank = late_out.filter(pl.col("event_id").is_in(["ev_0", "ev_1", "ev_2"]))
+    assert sorted(early_rank["graph_pagerank"].to_list(), reverse=True) == pytest.approx(
+        sorted(late_rank["graph_pagerank"].to_list(), reverse=True), rel=1e-3
+    )
+    assert max(
+        abs(a - b)
+        for a, b in zip(early_rank["graph_pagerank"], late_rank["graph_pagerank"])
+    ) < 1e-3
 
 
 def test_graph_degree_is_zero_before_the_first_edge():
@@ -325,3 +337,61 @@ def test_undirected_projection_is_what_clustering_uses():
     # undirected triangle -> complete
     assert clustering(snapshot)["a"] == pytest.approx(1.0)
     assert nx.number_of_edges(snapshot.to_undirected()) == 3
+
+# ---------------------------------------------------------------------------
+# Regression: every graph feature must actually vary.
+# ---------------------------------------------------------------------------
+def test_every_graph_feature_is_non_degenerate():
+    """A column that is constant zero is indistinguishable from a broken one.
+
+    This is the failure that shipped once already: ``snapshot_measures`` prefixes its
+    structural outputs with ``graph_`` while the degree outputs are unprefixed, so
+    ``values.get("pagerank")`` missed and every PageRank/clustering/community value
+    silently defaulted to 0. Degrees looked fine, so nothing else noticed.
+    """
+    relations = _relations(
+        [
+            ("a", "b", T0),
+            ("b", "c", T0 + timedelta(hours=1)),
+            ("a", "c", T0 + timedelta(hours=2)),
+            ("d", "e", T0 + timedelta(hours=3)),
+            ("e", "f", T0 + timedelta(hours=4)),
+        ]
+    )
+    events = _events(
+        [
+            ("a", T0 + timedelta(hours=20), ["b", "c"]),
+            ("b", T0 + timedelta(hours=21), ["c"]),
+            ("c", T0 + timedelta(hours=22), ["a"]),
+            ("d", T0 + timedelta(hours=23), ["e"]),
+            ("e", T0 + timedelta(hours=24), ["f", "d"]),
+        ]
+    )
+    out = add_graph_features(events, relations, snapshot_interval_seconds=3600)
+    for column, minimum_distinct in (
+        ("graph_degree", 2),
+        ("graph_in_degree", 2),
+        ("graph_out_degree", 2),
+        ("graph_weighted_degree", 2),
+        ("graph_pagerank", 2),
+        ("graph_clustering", 2),
+    ):
+        values = out[column].to_list()
+        assert len(set(values)) >= minimum_distinct, (
+            f"{column} is effectively constant: {values}"
+        )
+
+
+def test_graph_feature_names_match_the_registry_expectations():
+    """Every declared relational feature must actually appear on the frame."""
+    from mosaic.features.compute import FeatureConfig, _registry_for
+    from mosaic.features.registry import FeatureFamily
+
+    registry = _registry_for(FeatureConfig(include_graph=True))
+    relational = registry.names([FeatureFamily.RELATIONAL])
+    assert relational, "no relational features declared"
+    relations = _relations([("a", "b", T0), ("b", "c", T0 + timedelta(hours=1))])
+    events = _events([("a", T0 + timedelta(hours=5), ["b"]), ("b", T0 + timedelta(hours=6), ["c"])])
+    out = add_graph_features(events, relations, snapshot_interval_seconds=3600)
+    missing = [name for name in relational if name not in out.columns]
+    assert not missing, f"declared but not produced: {missing}"

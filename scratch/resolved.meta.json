@@ -12,7 +12,7 @@
   ],
   "n_entities_resolved": 1017,
   "t_ingest": 0.2,
-  "t_clean": 1.63,
+  "t_clean": 1.6,
   "t_resolve": 0.08,
   "ledger": {
     "dataset": "world_a",

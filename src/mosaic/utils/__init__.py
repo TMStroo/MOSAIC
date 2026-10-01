@@ -8,7 +8,7 @@ from mosaic.utils.io import (
     write_json,
     write_parquet,
 )
-from mosaic.utils.provenance import code_version, hardware_info, git_commit
+from mosaic.utils.provenance import code_version, git_commit, hardware_info
 from mosaic.utils.timing import Stopwatch, stage_timer
 
 __all__ = [

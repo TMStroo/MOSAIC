@@ -38,6 +38,7 @@ from __future__ import annotations
 
 from .base import EntityResolver, ResolutionConfig, ResolutionResult
 from .blocking import BlockKey, blocking_strategies, generate_candidates
+from .evaluate import TruthMap, compare_matchers, evaluate_resolution, threshold_sensitivity
 from .matchers import (
     ExactMatcher,
     MatcherName,
@@ -48,7 +49,6 @@ from .matchers import (
     SupervisedMatcher,
     build_matcher,
 )
-from .evaluate import TruthMap, compare_matchers, evaluate_resolution, threshold_sensitivity
 
 __all__ = [
     "BlockKey",
@@ -59,10 +59,10 @@ __all__ = [
     "ProbabilisticMatcher",
     "ResolutionConfig",
     "ResolutionResult",
-    "TruthMap",
     "RuleMatcher",
     "SimilarityMatcher",
     "SupervisedMatcher",
+    "TruthMap",
     "blocking_strategies",
     "build_matcher",
     "compare_matchers",

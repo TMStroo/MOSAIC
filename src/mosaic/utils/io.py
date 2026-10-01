@@ -19,7 +19,7 @@ from mosaic.schema.ids import stable_hash
 
 
 class _Encoder(json.JSONEncoder):
-    def default(self, o: Any) -> Any:  # noqa: ANN401
+    def default(self, o: Any) -> Any:
         if hasattr(o, "isoformat"):
             return o.isoformat()
         if isinstance(o, Path):

@@ -21,10 +21,11 @@ hard error. That turns leakage prevention from a review question into a check.
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from pathlib import Path
-from typing import Any, Iterable
+from typing import Any
 
 from mosaic.schema.ids import stable_hash
 

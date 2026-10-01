@@ -12,7 +12,7 @@ from pathlib import Path
 
 sys.path.insert(0, r"F:\projects\MOSAIC\src")
 
-import polars as pl  # noqa: E402
+import polars as pl
 
 ROOT = Path(r"F:\projects\MOSAIC")
 SCRATCH = ROOT / "scratch"
@@ -29,9 +29,9 @@ def build(force: bool = False) -> tuple[pl.DataFrame, dict]:
         meta["events"] = pl.read_parquet(cached)
         return meta["events"], meta
 
-    from mosaic.ingestion.pipeline import ingest_dataset
     from mosaic.cleaning.events import clean_events
     from mosaic.entity_resolution.base import EntityResolver
+    from mosaic.ingestion.pipeline import ingest_dataset
 
     SCRATCH.mkdir(parents=True, exist_ok=True)
     t0 = time.perf_counter()

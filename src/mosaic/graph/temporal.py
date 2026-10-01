@@ -25,9 +25,10 @@ PageRank over an edge-ordered stream, not a global graph.
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import Any, Iterable
+from typing import Any
 
 import networkx as nx
 import numpy as np
@@ -375,13 +376,24 @@ def snapshot_features(
                 max(cutoff, floor),
                 compute_betweenness=(index % max(1, graph.config.betweenness_every) == 0),
             )
+            # snapshot_measures names its structural outputs with a "graph_" prefix
+            # ("graph_pagerank"), while the degree outputs are unprefixed ("degree").
+            # Both lookups try each spelling so a naming change on either side is a
+            # hard error rather than a column that is silently all zeros.
+            def pick(values: dict[str, float], name: str) -> float:
+                for key in (name, f"graph_{name}"):
+                    if key in values:
+                        return float(values[key])
+                raise KeyError(
+                    f"snapshot_measures returned none of {name!r}/graph_{name!r}; "
+                    f"available: {sorted(values)}"
+                )
+
             tables[bucket] = pl.DataFrame(
                 {
                     entity_column: list(measures.keys()),
                     **{
-                        f"graph_{name}": [
-                            float(values.get(name, 0.0)) for values in measures.values()
-                        ]
+                        f"graph_{name}": [pick(v, name) for v in measures.values()]
                         for name in feature_names
                     },
                 },

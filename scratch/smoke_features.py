@@ -8,16 +8,15 @@ from __future__ import annotations
 import sys
 import time
 import traceback
-from pathlib import Path
 
 sys.path.insert(0, r"F:\projects\MOSAIC\src")
 sys.path.insert(0, r"F:\projects\MOSAIC\scratch")
 
-import polars as pl  # noqa: E402
 
-from build_resolved import build  # noqa: E402
-from mosaic.experiments.protocol import build_split_plan, period_frames  # noqa: E402
-from mosaic.features.compute import (  # noqa: E402
+from build_resolved import build
+
+from mosaic.experiments.protocol import build_split_plan, period_frames
+from mosaic.features.compute import (
     FeatureConfig,
     assert_causal,
     compute_features,

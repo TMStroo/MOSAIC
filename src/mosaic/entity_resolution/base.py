@@ -23,14 +23,12 @@ import logging
 from dataclasses import dataclass, field
 from typing import Any
 
-import numpy as np
 import polars as pl
 
 from .blocking import STRATEGIES, Strategy, blocking_strategies, generate_candidates
 from .matchers import (
     FEATURE_COLUMNS,
     MatcherName,
-    ScoringResult,
     build_matcher,
     candidate_features,
 )
@@ -272,7 +270,7 @@ class EntityResolver:
         """
         accepted = decisions.filter(pl.col("decision") == "match")
         parent: dict[str, str] = {r: r for r in references["ref_id"].to_list()}
-        size: dict[str, int] = {r: 1 for r in parent}
+        size: dict[str, int] = dict.fromkeys(parent, 1)
 
         def find(node: str) -> str:
             root = node

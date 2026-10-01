@@ -11,10 +11,10 @@ nothing in the research report is typed by hand.
 from __future__ import annotations
 
 __all__ = [
-    "__version__",
-    "SCHEMA_VERSION",
     "EVAL_PROTOCOL_VERSION",
     "FEATURE_SET_VERSION",
+    "SCHEMA_VERSION",
+    "__version__",
 ]
 
 __version__ = "0.1.0"

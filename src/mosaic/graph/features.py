@@ -8,7 +8,8 @@ from __future__ import annotations
 
 import polars as pl
 
-from mosaic.graph.temporal import GraphConfig, add_graph_features as _add
+from mosaic.graph.temporal import GraphConfig
+from mosaic.graph.temporal import add_graph_features as _add
 
 GRAPH_FEATURE_NAMES = (
     "graph_degree",
@@ -46,4 +47,4 @@ def add_graph_features(
     )
 
 
-__all__ = ["add_graph_features", "GRAPH_FEATURE_NAMES"]
+__all__ = ["GRAPH_FEATURE_NAMES", "add_graph_features"]

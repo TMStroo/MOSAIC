@@ -23,7 +23,6 @@ Check list (each one answers a question a reviewer would ask):
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Any
 
 import polars as pl
 

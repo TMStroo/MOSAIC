@@ -12,6 +12,7 @@ import numpy as np
 import polars as pl
 import pytest
 
+from mosaic.experiments.protocol import build_split_plan
 from mosaic.features.compute import (
     DAY,
     HOUR,
@@ -20,7 +21,6 @@ from mosaic.features.compute import (
     compute_features,
     fit_state,
 )
-from mosaic.experiments.protocol import build_split_plan
 
 BASE = pl.datetime_range(
     start=datetime(2021, 1, 1), end=datetime(2021, 1, 3), interval="1h", eager=True

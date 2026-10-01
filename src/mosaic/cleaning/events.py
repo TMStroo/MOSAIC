@@ -394,7 +394,7 @@ def _remap_expression(folded_col: str, out_col: str) -> pl.Expr:
     Uses the *same* dictionary the adapters use, so cleaning and normalization
     cannot disagree about what 'BUS' means.
     """
-    from mosaic.ingestion.synthetic.render import CATEGORY_TO_EVENT_TYPE
+    from mosaic.ingestion.synthetic.vocabulary import CATEGORY_TO_EVENT_TYPE
 
     reverse: dict[str, str] = {}
     for mapping in CATEGORY_TO_EVENT_TYPE.values():

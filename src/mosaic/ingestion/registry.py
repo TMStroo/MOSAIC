@@ -43,7 +43,7 @@ def available_adapters() -> list[str]:
 
 def _load_builtin() -> None:
     """Import the built-in adapter modules so their classes register."""
-    from mosaic.ingestion.synthetic.adapters import (  # noqa: F401
+    from mosaic.ingestion.synthetic.adapters import (
         IncidentLogAdapter,
         LedgerApiAdapter,
         SensorNetAdapter,

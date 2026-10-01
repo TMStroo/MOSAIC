@@ -21,7 +21,8 @@ from mosaic.ingestion.synthetic.generator import (
     generate_world,
     render_entity_id,
 )
-from mosaic.ingestion.synthetic.render import CATEGORY_TO_EVENT_TYPE, NATIVE_COLUMNS, render_world
+from mosaic.ingestion.synthetic.render import NATIVE_COLUMNS, render_world
+from mosaic.ingestion.synthetic.vocabulary import CATEGORY_TO_EVENT_TYPE
 from mosaic.ingestion.synthetic.world import SyntheticWorld
 
 __all__ = [

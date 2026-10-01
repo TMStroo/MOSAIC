@@ -21,7 +21,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any, Callable, Iterable, Sequence
+from typing import Any
 
 import numpy as np
 import polars as pl
@@ -193,16 +193,16 @@ def fit_state(
         # Keyed by a (prev, cur) tuple, never by a delimited string. A string key
         # would be ambiguous as soon as a category contained the delimiter, and it
         # would have to be re-parsed to look up, which is where this goes wrong.
-        counts: dict[tuple[str, str], float] = {}
+        transition_counts: dict[tuple[str, str], float] = {}
         for prev, cur in transitions.select("prev", "source_event_type").iter_rows():
             if prev is None or cur is None:
                 continue
-            key = (str(prev), str(cur))
-            counts[key] = counts.get(key, 0.0) + 1.0
-        total_transitions = max(1.0, sum(counts.values()))
+            pair = (str(prev), str(cur))
+            transition_counts[pair] = transition_counts.get(pair, 0.0) + 1.0
+        total_transitions = max(1.0, sum(transition_counts.values()))
         state.sequence_stats = {
-            key: {"probability": value / total_transitions, "count": value}
-            for key, value in counts.items()
+            pair: {"probability": value / total_transitions, "count": value}
+            for pair, value in transition_counts.items()
         }
         state.cross_source_stats = {
             "mean_transition_probability": float(
@@ -312,7 +312,7 @@ def _frequency_features(
 
 def _trailing_count(
     frame: pl.DataFrame, time_col: str, entity: str, window: int
-) -> pl.Expr:
+) -> pl.Series:
     """Per-entity count of rows in the trailing ``window`` seconds, inclusive of t.
 
     Counts rows with ``t - window < ts <= t``. Two details are load-bearing and both
@@ -328,7 +328,9 @@ def _trailing_count(
       than an entity's own time span the lower bound can land in a *previous*
       block. Clamping it to the block start is what makes the count per-entity.
 
-    Returns a Series-alias expression aligned to the frame's current row order.
+    Returns a Series aligned to the frame's current row order, for use in
+    ``with_columns``. It is a positional Series, not a lazy Expr: the whole point is
+    that the window search is a single vectorised pass.
     """
     seconds = frame[time_col].dt.epoch("s").to_numpy().astype(np.int64)
     entities = frame[entity].to_numpy()

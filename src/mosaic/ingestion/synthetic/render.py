@@ -12,26 +12,27 @@ case damage on categories, near-duplicate rows, and identifier typos.
 
 from __future__ import annotations
 
-from typing import Any
-
 import numpy as np
 import polars as pl
 
-from mosaic.ingestion.synthetic.vocabulary import (
-    CATEGORY_TO_EVENT_TYPE,
-    NATIVE_CATEGORIES,
-    canonical_event_type,
-)
 from mosaic.ingestion.synthetic.generator import (
     DAY,
     HOUR,
     SOURCE_ID_STYLE,
     SOURCE_PLAN,
     SOURCE_TYPE_WEIGHTS,
-    SyntheticSpec,
     Stream,
+    SyntheticSpec,
     render_entity_id,
 )
+from mosaic.ingestion.synthetic.vocabulary import (
+    CATEGORY_TO_EVENT_TYPE,
+    NATIVE_CATEGORIES,
+)
+
+# Re-exported for callers that historically imported the category mapping from here.
+# ruff's F401 would strip it as unused, which silently breaks those imports.
+__all__ = ["CATEGORY_TO_EVENT_TYPE", "NATIVE_CATEGORIES", "NATIVE_COLUMNS", "render_world"]
 from mosaic.utils.io import write_parquet
 
 #: Native column name per canonical field, per source. Nothing is shared.

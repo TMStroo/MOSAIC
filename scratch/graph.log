@@ -1,0 +1,12 @@
+events=497994 entities=1017
+Traceback (most recent call last):
+  File "F:\projects\MOSAIC\scratch\smoke_graph.py", line 123, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "F:\projects\MOSAIC\scratch\smoke_graph.py", line 56, in main
+    from mosaic.ingestion.pipeline import ingest_dataset as _ing
+  File "F:\projects\MOSAIC\src\mosaic\ingestion\__init__.py", line 5, in <module>
+    from mosaic.ingestion.synthetic import SyntheticMultiSourceAdapter
+  File "F:\projects\MOSAIC\src\mosaic\ingestion\synthetic\__init__.py", line 24, in <module>
+    from mosaic.ingestion.synthetic.render import CATEGORY_TO_EVENT_TYPE, NATIVE_COLUMNS, render_world
+ImportError: cannot import name 'CATEGORY_TO_EVENT_TYPE' from 'mosaic.ingestion.synthetic.render' (F:\projects\MOSAIC\src\mosaic\ingestion\synthetic\render.py)
