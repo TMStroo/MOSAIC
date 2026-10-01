@@ -170,6 +170,9 @@ class SyntheticSpec:
     anomaly_prevalence: float = 0.03
     anomaly_families: tuple[str, ...] = FAMILIES
     scale_target: bool = True
+    #: When true, ``n_entities`` is derived from ``target_events``. Off by default:
+    #: the entity population is a modelling decision, not a function of volume.
+    derive_entities: bool = False
 
     def sources(self) -> list[str]:
         return list(SOURCE_PLAN)[: int(max(2, min(len(SOURCE_PLAN), self.n_sources)))]
@@ -177,19 +180,34 @@ class SyntheticSpec:
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)
 
-    def resolved(self) -> SyntheticSpec:
-        """Scale the entity population so the stream lands near ``target_events``.
+    def n_entities_for_target(self) -> int:
+        """Entity population implied by ``target_events`` at this duration.
 
-        Scaling *entities* (rather than duplicating events) keeps per-entity
-        behavioural baselines meaningful, which the feature layer depends on.
+        Used by the scaling presets, where the *event count* is the thing being
+        varied. For research presets ``n_entities`` is set explicitly instead: a
+        population of 20 actors makes entity resolution, community structure and
+        per-entity behavioural baselines all degenerate, so the entity count is
+        never left to an accident of arithmetic.
         """
         days = float(max(7, int(self.days)))
         weights = np.array([self.profile_weights[p] for p in PROFILES], dtype=float)
         weights = weights / weights.sum()
-        mean_per_entity = float((weights * np.array([PROFILES[p][0] for p in PROFILES])).sum())
-        if self.scale_target and self.target_events > 0:
-            want = self.target_events / (mean_per_entity * days)
-            self.n_entities = int(max(20, min(1_000_000, round(want))))
+        mean_per_entity = float(
+            (weights * np.array([PROFILES[p][0] for p in PROFILES])).sum()
+        )
+        want = self.target_events / (mean_per_entity * days)
+        return int(max(20, min(1_000_000, round(want))))
+
+    def resolved(self) -> SyntheticSpec:
+        """Optionally derive the entity population from the event target.
+
+        ``derive_entities`` is off for research presets and on for scaling presets.
+        Either way the *realized* event count is recorded in the manifest, so the
+        experiment never has to assume it hit its target.
+        """
+        if self.derive_entities and self.scale_target:
+            self.n_entities = self.n_entities_for_target()
+        self.n_entities = int(max(20, self.n_entities))
         return self
 
     def budget(self) -> int:
@@ -622,7 +640,15 @@ def _sort_stream(s: Stream) -> Stream:
 
 # -------------------------------------------------------------- ER ground truth
 def _entity_links(spec: SyntheticSpec, rng: np.random.Generator, er: dict[str, Any]) -> pl.DataFrame:
-    """Ground-truth (source_ref -> entity_key) map, including corruption and ambiguity."""
+    """Ground-truth (source_ref -> entity_key) map for the *clean* rendered ids.
+
+    The map is extended with the typo-damaged references the renderer actually
+    emitted (see :func:`mosaic.ingestion.synthetic.render_source`, which returns
+    the observed->latent mapping directly). It must cover every reference present
+    in the data: if it only recorded clean ids, the resolver would be graded only
+    on the references it finds easy, and the measured precision/recall would
+    describe a different problem than the one being solved.
+    """
     n = spec.n_entities
     numeric = np.random.default_rng(spec.seed + 991).integers(10_000_000, 99_000_000, size=n)
     ambiguous = set(
@@ -631,19 +657,55 @@ def _entity_links(spec: SyntheticSpec, rng: np.random.Generator, er: dict[str, A
     rows: list[dict[str, Any]] = []
     for source_id in spec.sources():
         style = SOURCE_ID_STYLE[source_id]
-        rendered = [render_entity_id(style, i, int(numeric[i])) for i in range(n)]
+        clean = [render_entity_id(style, i, int(numeric[i])) for i in range(n)]
         for victim, donor in er["merges"]:
-            rendered[victim] = rendered[donor]
+            clean[victim] = clean[donor]
         for e in range(n):
             rows.append(
                 {
                     "source_id": source_id,
-                    "source_ref": rendered[e],
+                    "source_ref": clean[e],
                     "entity_key": f"E{e:06d}",
                     "is_ambiguous": e in ambiguous,
+                    "is_clean": True,
                 }
             )
     return pl.DataFrame(rows)
+
+
+def with_observed_refs(
+    links: pl.DataFrame, observed_maps: dict[str, dict[str, int]]
+) -> pl.DataFrame:
+    """Add the damaged references observed in the data to the truth map.
+
+    ``observed_maps[source_id]`` maps every reference that source actually emitted
+    to its latent entity index, produced by the renderer itself. Because the
+    renderer is the only component that damages identifiers, asking it is exact -
+    no repair heuristic is needed, and a reference that genuinely cannot be
+    attributed is simply absent rather than guessed.
+    """
+    extra: list[dict[str, Any]] = []
+    for source_id, mapping in observed_maps.items():
+        clean_rows = links.filter(pl.col("source_id") == source_id)
+        known = set(clean_rows["source_ref"].to_list())
+        by_entity = dict(clean_rows.select("entity_key", "source_ref").iter_rows())
+        for ref, entity_index in mapping.items():
+            if ref in known:
+                continue
+            key = f"E{int(entity_index):06d}"
+            if key in by_entity:
+                extra.append(
+                    {
+                        "source_id": source_id,
+                        "source_ref": ref,
+                        "entity_key": key,
+                        "is_ambiguous": False,
+                        "is_clean": False,
+                    }
+                )
+    if not extra:
+        return links
+    return pl.concat([links, pl.DataFrame(extra)], how="vertical")
 
 
 def render_entity_id(style: str, entity: int, numeric: int) -> str:

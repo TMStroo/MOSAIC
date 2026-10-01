@@ -23,6 +23,7 @@ from mosaic.ingestion.synthetic.generator import (
     SyntheticSpec,
     generate_world,
     render_entity_id,
+    with_observed_refs,
 )
 from mosaic.ingestion.synthetic.render import NATIVE_COLUMNS, render_world
 from mosaic.ingestion.synthetic.world import SyntheticWorld
@@ -30,13 +31,23 @@ from mosaic.schema.ids import file_checksum, stable_hash
 from mosaic.utils.io import write_json, write_parquet
 
 TRUTH_DIR = "_truth"
-SPECIALS = {
-    "small": SyntheticSpec(name="world_a", seed=20260901, target_events=8_000, days=365, n_sources=4),
-    "research": SyntheticSpec(name="world_a", seed=20260901, target_events=120_000, days=365, n_sources=4),
+#: Named environments used by the CLI, the experiment configs and the tests.
+#:
+#: ``n_entities`` is explicit for research profiles (a small population makes entity
+#: resolution and community structure degenerate); the ``scale_*`` profiles set
+#: ``derive_entities`` so the event count - the variable under study - drives it.
+SPECIALS: dict[str, SyntheticSpec] = {
+    "small": SyntheticSpec(
+        name="world_a", seed=20260901, n_entities=500, target_events=40_000, days=180, n_sources=4
+    ),
+    "research": SyntheticSpec(
+        name="world_a", seed=20260901, n_entities=1_200, target_events=180_000, days=365, n_sources=4
+    ),
     "world_b": SyntheticSpec(
         name="world_b",
         seed=777_001,
-        target_events=120_000,
+        n_entities=1_200,
+        target_events=180_000,
         days=365,
         n_sources=4,
         profile_weights={
@@ -50,11 +61,21 @@ SPECIALS = {
         regime_count=3,
         ambiguous_rate=0.14,
     ),
-    "scale_100k": SyntheticSpec(name="scale_100k", seed=424_242, target_events=100_000, days=180),
-    "scale_500k": SyntheticSpec(name="scale_500k", seed=424_242, target_events=500_000, days=180),
-    "scale_1m": SyntheticSpec(name="scale_1m", seed=424_242, target_events=1_000_000, days=180),
-    "scale_5m": SyntheticSpec(name="scale_5m", seed=424_242, target_events=5_000_000, days=180),
-    "scale_10m": SyntheticSpec(name="scale_10m", seed=424_242, target_events=10_000_000, days=180),
+    "scale_100k": SyntheticSpec(
+        name="scale_100k", seed=424_242, target_events=100_000, days=180, derive_entities=True
+    ),
+    "scale_500k": SyntheticSpec(
+        name="scale_500k", seed=424_242, target_events=500_000, days=180, derive_entities=True
+    ),
+    "scale_1m": SyntheticSpec(
+        name="scale_1m", seed=424_242, target_events=1_000_000, days=180, derive_entities=True
+    ),
+    "scale_5m": SyntheticSpec(
+        name="scale_5m", seed=424_242, target_events=5_000_000, days=180, derive_entities=True
+    ),
+    "scale_10m": SyntheticSpec(
+        name="scale_10m", seed=424_242, target_events=10_000_000, days=180, derive_entities=True
+    ),
 }
 
 
@@ -78,7 +99,8 @@ def write_world(spec: SyntheticSpec, root: Path | str, *, world: SyntheticWorld 
     base = Path(root) / spec.name
     base.mkdir(parents=True, exist_ok=True)
 
-    frames = render_world(spec, w.stream, w.entity_links)
+    frames, observed = render_world(spec, w.stream, w.entity_links)
+    links = with_observed_refs(w.entity_links, observed)
     row_counts: dict[str, int] = {}
     schemas: dict[str, dict[str, str]] = {}
     for source_id, frame in frames.items():
@@ -89,7 +111,7 @@ def write_world(spec: SyntheticSpec, root: Path | str, *, world: SyntheticWorld 
 
     truth_dir = base / TRUTH_DIR
     write_parquet(truth_dir / "labels.parquet", w.truth)
-    write_parquet(truth_dir / "entity_links.parquet", w.entity_links)
+    write_parquet(truth_dir / "entity_links.parquet", links)
     latent = w.events.select("latent_id", "entity_key", "related_key", "event_type", "location_id")
     write_parquet(truth_dir / "latent_events.parquet", latent)
 
@@ -109,7 +131,7 @@ def write_world(spec: SyntheticSpec, root: Path | str, *, world: SyntheticWorld 
         "native_columns": NATIVE_COLUMNS,
         "checksums": checksums,
         "truth_summary": w.truth_summary(),
-        "entity_link_summary": w.entity_link_summary(),
+        "entity_link_summary": {**w.entity_link_summary(), "observed_refs": int(links.height) - int(w.entity_links.height)},
         "er_noise": spec.er_noise,
         "time_span": [
             str(w.events["timestamp"].min()),

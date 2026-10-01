@@ -167,14 +167,21 @@ def render_source(
     s: Stream,
     rng: np.random.Generator,
     entity_rendered: np.ndarray,
-) -> pl.DataFrame:
+) -> tuple[pl.DataFrame, dict[str, int]]:
     """Project the latent stream into one source's native rows.
+
+    Returns the frame *and* the map from every reference this source actually
+    emitted back to its latent entity index. That map is what makes the ground
+    truth for entity resolution complete: the renderer is the only component that
+    damages identifiers, so it - not a repair heuristic - is the authority on which
+    damaged reference belongs to which entity.
 
     ``entity_rendered`` is indexed by *latent entity index* and is read straight
     from the ground-truth link table, so identifier corruption (entity-resolution
     noise) is visible in the observed data exactly as it is in the truth map.
     """
     lag_days, field_missing, obs_prob = SOURCE_PLAN[source_id]
+    rng_vocab = np.random.default_rng(spec.seed + 7919 * (list(SOURCE_PLAN).index(source_id) + 1))
     cols = NATIVE_COLUMNS[source_id]
     cats = NATIVE_CATEGORIES[source_id]
     allowed = _types_allowed(source_id)
@@ -192,9 +199,18 @@ def render_source(
             continue
         keep &= ~((day_of >= start_day) & (day_of < end_day))
 
+    # Damage the *vocabulary*, not individual rows. Applying the typo rate per row
+    # would create a fresh corrupted reference for 3% of every source's rows, so a
+    # 500k-row source would carry ~15k unresolvable references and the entity map
+    # would become mostly noise - the resolution task would then measure nothing but
+    # the renderer's damage. Corrupting each distinct identifier once (a few percent
+    # of the vocabulary) is both more realistic and leaves the resolution problem
+    # well-posed.
+    entity_rendered = _typo_ids(entity_rendered, rng_vocab, 0.03)
+
     idx = np.flatnonzero(keep)
     if idx.size == 0:
-        return _empty_native(source_id)
+        return _empty_native(source_id), {}
 
     m = idx.size
     rng_evt = np.random.default_rng(spec.seed + 5_000 * (list(SOURCE_PLAN).index(source_id) + 1))
@@ -247,7 +263,6 @@ def render_source(
     peer = np.where(peer == actors, "", peer)  # a source never points at itself
 
     # --- identifier damage + missing fields --------------------------------
-    actors = _typo_ids(actors, rng_evt, 0.03)
     peer = _typo_ids(peer, rng_evt, 0.02)
     iso = _iso_array(times)
     iso = _corrupt_timestamps(iso, rng_evt, 0.006)
@@ -274,6 +289,8 @@ def render_source(
     # downstream ever computes a mean over a NaN.
     value = np.where(rng_evt.random(m) < field_missing, np.nan, value)
 
+    # observed reference -> latent entity, captured *after* the typo damage below
+    latent_of_row = s.ent[idx]
     record_id = [f"{source_id[:2]}-{s.latent_id[i]}" for i in idx]
     flag = (rng_evt.random(m) < 0.07).astype(np.int8)
 
@@ -309,7 +326,10 @@ def render_source(
                 )
             frame = pl.concat([frame, dup, mangled], how="vertical_relaxed")
 
-    return frame
+    observed: dict[str, int] = {}
+    for value, entity in zip(actors.tolist(), latent_of_row.tolist(), strict=True):
+        observed.setdefault(value, int(entity))
+    return frame, observed
 
 
 def _empty_native(source_id: str) -> pl.DataFrame:
@@ -328,16 +348,28 @@ def _empty_native(source_id: str) -> pl.DataFrame:
     return pl.DataFrame(schema=schema)
 
 
-def render_world(spec: SyntheticSpec, s: Stream, entity_links: pl.DataFrame) -> dict[str, pl.DataFrame]:
-    """Render every configured source from one latent stream."""
+def render_world(
+    spec: SyntheticSpec, s: Stream, entity_links: pl.DataFrame
+) -> tuple[dict[str, pl.DataFrame], dict[str, dict[str, int]]]:
+    """Render every configured source from one latent stream.
+
+    Returns the per-source frames and the per-source observed-reference maps.
+    """
     out: dict[str, pl.DataFrame] = {}
+    observed: dict[str, dict[str, int]] = {}
     for slot, source_id in enumerate(spec.sources()):
         rows = entity_links.filter(pl.col("source_id") == source_id).sort("entity_key")
         latent_index = np.array([int(k[1:]) for k in rows["entity_key"]], dtype=np.int64)
-        # source_ref is authoritative: it already contains the entity-resolution
-        # corruption, so the observed ids and the truth map cannot disagree
-        rendered = rows["source_ref"].to_numpy().astype(object)
-        out[source_id] = render_source(
+        # The clean rendered id, from which the same vocabulary-level corruption the
+        # renderer applies is reproduced with the same seed. Doing it here (rather
+        # than reading a damaged id out of the truth map) keeps the truth map a
+        # record of *what the source should say*, with the damaged variants added
+        # afterwards by the builder from what the renderer actually emitted.
+        rendered = np.array(
+            [render_entity_id(SOURCE_ID_STYLE[source_id], e, 0) for e in latent_index.tolist()],
+            dtype=object,
+        )
+        out[source_id], observed[source_id] = render_source(
             spec,
             source_id,
             s,
@@ -345,7 +377,7 @@ def render_world(spec: SyntheticSpec, s: Stream, entity_links: pl.DataFrame) -> 
             np.random.default_rng(spec.seed + 1009 * (slot + 1)),
             rendered,
         )
-    return out
+    return out, observed
 
 
 def write_source_parquet(spec: SyntheticSpec, frames: dict[str, pl.DataFrame], root) -> dict[str, int]:
