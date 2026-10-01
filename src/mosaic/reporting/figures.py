@@ -308,10 +308,19 @@ def _legend(
 
 
 def _finish(fig, ax, out_path: Path) -> str:
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
+    """Hide the axes and save.
+
+    Limits are NOT forced here: every figure calls _new_canvas, which already
+    froze xlim/ylim at the right values, and clamping y back to (0,1) silently
+    discarded a figure's own vertical range.
+
+    `bbox_inches="tight"` is deliberately NOT used. It crops the canvas to the
+    drawn artists, so the saved PNG's size no longer matches the figure and any
+    tool that maps data coordinates to pixels (the geometry checker) is off by the
+    crop offset. Saving the full canvas keeps data(x,y) -> pixel(y) exact.
+    """
     ax.axis("off")
-    fig.savefig(out_path, bbox_inches="tight", pad_inches=0.16)
+    fig.savefig(out_path, pad_inches=0.16)
     plt.close(fig)
     return str(out_path)
 
@@ -343,11 +352,11 @@ def _measure_block(ax, text: str, *, size: float, leading: float = 1.52) -> floa
 
 def _band_around(
     ax,
-    boxes: list[tuple[float, float, float]],
+    boxes: list[tuple[float, float, float, float]],
     *,
     label: str,
     pad_x: float = 0.016,
-    pad_top: float = 0.072,
+    pad_top: float = 0.062,
     pad_bot: float = 0.030,
 ) -> tuple[float, float, float]:
     """Draw a band that provably contains the boxes given.
@@ -356,10 +365,10 @@ def _band_around(
     than from separately hard-coded numbers. A box row that drifts outside its own
     group shading is otherwise invisible until someone looks at the PNG.
     """
-    left = min(x for x, _, _ in boxes) - pad_x
-    right = max(x + w for x, w, _ in boxes) + pad_x
-    bottom = min(y for _, y, _ in boxes) - pad_bot
-    top = max(y + h for _, y, h in boxes) + pad_top
+    left = min(bx for bx, _by, _bw, _bh in boxes) - pad_x
+    right = max(bx + bw for bx, _by, bw, _bh in boxes) + pad_x
+    bottom = min(by for _bx, by, _bw, _bh in boxes) - pad_bot
+    top = max(by + bh for _bx, by, _bw, bh in boxes) + pad_top
     ax.add_patch(
         FancyBboxPatch(
             (left, bottom),
@@ -372,14 +381,16 @@ def _band_around(
             zorder=0,
         )
     )
-    # Above the band, not inside it: a snug band left the caption sitting on the
-    # top edge of the tallest box, which reads as a collision at README size.
+    # INSIDE the band, in the padding above its own boxes. Placing it above the
+    # band instead put it in the gap belonging to the PREVIOUS band: band 2's
+    # caption landed at y=0.771, inside band 1's box row (0.735-0.833), where the
+    # boxes drew over it. A caption must be positioned relative to its own boxes.
     ax.text(
         left + 0.006,
-        top + 0.010,
+        top - 0.016,
         label.upper(),
         ha="left",
-        va="bottom",
+        va="top",
         fontsize=6.8,
         fontweight="bold",
         color="#8b93a1",
@@ -496,13 +507,20 @@ def architecture(out_path: str | Path) -> str:
 
     H = 0.098
 
-    def row(y: float, items: list[tuple[str, str, str]], gap: float, size: float) -> list[tuple[float, float, float]]:
+    def row(y: float, items: list[tuple[str, str, str]], gap: float, size: float) -> list[tuple[float, float, float, float]]:
+        """Draw one row of stage boxes. Returns (x, y, w, h) per box.
+
+        The 4-tuple is load-bearing: _band_around reads the fourth element as the
+        box height. Returning (x, y, w) made every band treat a box's WIDTH as its
+        height, so bands were roughly ten times too tall and swallowed the rows
+        below them.
+        """
         w, stride = _row(len(items), gap=gap)
         out = []
         for i, (head, note, kind) in enumerate(items):
             x = 0.028 + i * stride
-            _multiline_box(ax, x, y, w, H, head, note, kind=kind, head_size=size, note_size=size - 1.6)
-            out.append((x, y, w))
+            used = _multiline_box(ax, x, y, w, H, head, note, kind=kind, head_size=size, note_size=size - 1.6)
+            out.append((x, y, w, used))
         return out
 
     # --- row 1: four deliberately incompatible sources
@@ -533,20 +551,51 @@ def architecture(out_path: str | Path) -> str:
         size=7.9,
     )
     _band_around(ax, pipe_boxes, label="Data layer — implemented and executed")
-    _, pipe_w, _ = pipe_boxes[0]
+    pipe_w = pipe_boxes[0][2]
     for i in range(1, 5):
         x0 = pipe_boxes[i - 1][0]
-        _arrow(ax, x0 + pipe_w, 0.556 + H / 2, pipe_boxes[i][0], 0.556 + H / 2)
+        _arrow(ax, x0 + pipe_w, pipe_boxes[0][1] + pipe_boxes[0][3] / 2, pipe_boxes[i][0], pipe_boxes[0][1] + pipe_boxes[0][3] / 2)
 
     # sources merge on a bus, then one arrow into the adapters box. Drawn as a bus
     # rather than four diagonals so no connector has to cross the source labels.
-    bus_y = 0.700
-    adapters_cx = pipe_boxes[0][0] + pipe_w / 2
-    for x, _y, w in src_boxes:
+    # The four sources merge on a bus above band 2 and drop into the adapters box.
+    #
+    # Two crossings had to be avoided, both found by measuring the render:
+    # the band's own caption sits at data-x 0.018..0.283, y 0.646..0.664, and the
+    # earlier routes hit it (465px, then 166px). So the bus now:
+    #   1. drops at the far RIGHT of the row (x=0.99, past the caption), and
+    #   2. approaches the adapters box from BELOW its caption band, entering the
+    #      box top at x=0.246 with the horizontal run at the box top itself
+    #      rather than above it.
+    # Sources merge on a bus, then one arrow into the adapters box.
+    #
+    # The bus must clear band 2's caption, which sits at data-y 0.646..0.664 and
+    # data-x 0.018..0.283. Band 2's boxes start at y=0.520, so the only free
+    # horizontal corridor is BELOW the boxes; a bus above them (y=0.705) crosses
+    # straight through the caption. Route it under the row instead, and drop into
+    # the box top from the right.
+    # Sources merge on a bus, then one arrow into the adapters box.
+    #
+    # There is exactly one free corridor: the gap between band 1's bottom edge and
+    # band 2's box row. Measured: band 2's caption occupies data-y 0.646..0.664
+    # and its boxes start at y=0.520, so a bus ABOVE the caption crosses it and a
+    # bus BELOW the caption crosses the boxes. The gap between band 1's floor and
+    # band 2's caption is the only clear run, and the drop happens at the far right
+    # (x=0.99) where no text sits.
+    # The italic notes sit BELOW each box, so a bus at box_bottom - 0.012 runs
+    # straight through them. Merge in the clear band above the headings instead:
+    # pipe row top minus a fixed gap, which is empty by construction.
+    box_top = pipe_boxes[0][1] + pipe_boxes[0][3]
+    bus_y = box_top + 0.030
+    drop_x = max(rx + rw for rx, _ry, rw, _rh in src_boxes) + 0.018
+    for x, _y, w, _h in src_boxes:
         cx = x + w / 2
-        ax.plot([cx, cx], [0.762 - 0.030, bus_y], color="#c2c8d1", linewidth=1.0, zorder=1)
-        ax.plot([cx, adapters_cx], [bus_y, bus_y], color="#c2c8d1", linewidth=1.0, zorder=1)
-    _arrow(ax, adapters_cx, bus_y, adapters_cx, 0.556 + H)
+        ax.plot([cx, cx], [bus_y, box_top], color="#c2c8d1", linewidth=1.0, zorder=1)
+    ax.plot([src_boxes[0][0] + src_boxes[0][2] / 2, drop_x], [bus_y, bus_y],
+            color="#c2c8d1", linewidth=1.0, zorder=1)
+    _arrow(ax, drop_x, bus_y, drop_x, box_top, color=BLUE, rad=0.0)
+    ax.plot([drop_x, pipe_boxes[0][0] + pipe_boxes[0][2] / 2], [box_top, box_top],
+            color=BLUE, linewidth=1.15, zorder=2)
 
     # --- row 3: research layer
     res_boxes = row(
@@ -562,22 +611,28 @@ def architecture(out_path: str | Path) -> str:
         size=7.9,
     )
     _band_around(ax, res_boxes, label="Research layer — implemented and executed")
-    res_w = res_boxes[0][1]
+    res_w = res_boxes[0][2]
     for i in range(1, 5):
         color = BLUE if i < 3 else GREY
-        _arrow(ax, res_boxes[i - 1][0] + res_w, 0.330 + H / 2, res_boxes[i][0], 0.330 + H / 2, color=color)
+        _arrow(ax, res_boxes[i - 1][0] + res_w, res_boxes[0][1] + res_boxes[0][3] / 2, res_boxes[i][0], res_boxes[0][1] + res_boxes[0][3] / 2, color=color)
 
     # Splits feeds the implemented research row. Both targets get a real down-arrow
     # into the box top; the earlier version left one dangling in empty space.
     splits_cx = pipe_boxes[4][0] + pipe_w / 2
     features_cx = res_boxes[0][0] + res_w / 2
     graph_cx = res_boxes[1][0] + res_w / 2
-    feed_y = 0.470
-    ax.plot([splits_cx, splits_cx], [0.556 - 0.030, feed_y], color=BLUE, linewidth=1.15, zorder=2)
+    # The feed bus runs along the BOTTOM of band 3, below the boxes, not across
+    # the middle. At mid-height it crossed the band's own caption.
+    # The italic notes live INSIDE each box, so a bus at box_bottom - 0.020 cuts
+    # straight through the note text of the row it feeds. The notes are the last
+    # thing in the box, so the only clear corridor below a row is outside the band.
+    feed_y = res_boxes[0][1] - 0.052
+    ax.plot([splits_cx, splits_cx], [pipe_boxes[0][1] - 0.030, feed_y], color=BLUE, linewidth=1.15, zorder=2)
     ax.plot([splits_cx, graph_cx], [feed_y, feed_y], color=BLUE, linewidth=1.15, zorder=2)
     ax.plot([features_cx, graph_cx], [feed_y, feed_y], color=BLUE, linewidth=1.15, zorder=2)
-    _arrow(ax, graph_cx, feed_y, graph_cx, 0.330 + H, color=BLUE)
-    _arrow(ax, features_cx, feed_y, features_cx, 0.330 + H, color=BLUE)
+    _arrow(ax, graph_cx, feed_y, graph_cx, res_boxes[0][1] + res_boxes[0][3] + 0.006, color=BLUE, rad=0.0)
+    _arrow(ax, graph_cx, res_boxes[0][1] + 0.006, graph_cx, res_boxes[0][1], color=BLUE)
+    _arrow(ax, features_cx, res_boxes[0][1] + 0.006, features_cx, res_boxes[0][1], color=BLUE)
 
     # --- row 4: delivery, all planned
     del_boxes = row(
@@ -594,9 +649,9 @@ def architecture(out_path: str | Path) -> str:
         size=7.4,
     )
     _band_around(ax, del_boxes, label="Delivery — designed for, not yet built", pad_bot=0.034)
-    del_w = del_boxes[0][1]
+    del_w = del_boxes[0][2]
     for i in range(1, 6):
-        _arrow(ax, del_boxes[i - 1][0] + del_w, 0.078 + H / 2, del_boxes[i][0], 0.078 + H / 2, color=GREY)
+        _arrow(ax, del_boxes[i - 1][0] + del_w, del_boxes[0][1] + del_boxes[0][3] / 2, del_boxes[i][0], del_boxes[0][1] + del_boxes[0][3] / 2, color=GREY)
 
     # The delivery row is fed from the models, not from the implemented baselines:
     # the pipeline it depends on is the planned one.
@@ -742,11 +797,12 @@ def data_integration(out_path: str | Path) -> str:
         for head, note in src
     )
     src_y = 0.700
-    src_boxes: list[tuple[float, float, float]] = []
+    # (x, y, w, h) -- _band_around reads the 4th element as the box height.
+    src_boxes: list[tuple[float, float, float, float]] = []
     for i, (head, note) in enumerate(src):
         x = 0.028 + i * stride
-        _multiline_box(ax, x, src_y, w, src_h, head, note, head_size=8.2, note_size=6.6)
-        src_boxes.append((x, src_y, w))
+        used = _multiline_box(ax, x, src_y, w, src_h, head, note, head_size=8.2, note_size=6.6)
+        src_boxes.append((x, src_y, w, used))
     _band_around(ax, src_boxes, label="Native schemas — mutually incompatible", pad_bot=0.030)
 
     # --- merge on a bus below the sources so no connector crosses a caption
@@ -754,7 +810,7 @@ def data_integration(out_path: str | Path) -> str:
     adapters_w = 0.300
     adapters_x = 0.028 + (1.0 - 0.028 - 0.030 - adapters_w) / 2
     adapters_cx = adapters_x + adapters_w / 2
-    for x, _y, bw in src_boxes:
+    for x, _y, bw, _bh in src_boxes:
         cx = x + bw / 2
         ax.plot([cx, cx], [src_y - 0.030, bus_y], color="#c2c8d1", linewidth=1.0, zorder=1)
         ax.plot([cx, adapters_cx], [bus_y, bus_y], color="#c2c8d1", linewidth=1.0, zorder=1)
@@ -1015,13 +1071,13 @@ def graph_methodology(out_path: str | Path) -> str:
 
     H = 0.130
 
-    def chain(y: float, items: list[tuple[str, str, str]], gap: float) -> list[tuple[float, float, float]]:
+    def chain(y: float, items: list[tuple[str, str, str]], gap: float) -> list[tuple[float, float, float, float]]:
         w, stride = _row(len(items), gap=gap)
         out = []
         for i, (head, note, kind) in enumerate(items):
             x = 0.028 + i * stride
-            _multiline_box(ax, x, y, w, H, head, note, kind=kind, head_size=7.7, note_size=6.5)
-            out.append((x, y, w))
+            used = _multiline_box(ax, x, y, w, H, head, note, kind=kind, head_size=7.7, note_size=6.5)
+            out.append((x, y, w, used))
             if i:
                 _arrow(
                     ax,
