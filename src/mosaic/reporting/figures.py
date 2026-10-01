@@ -64,12 +64,29 @@ def _style() -> None:
     )
 
 
-def _fill(kind: str) -> str:
-    return {
-        IMPLEMENTED: "#ffffff",
-        PLANNED: "#ffffff",
-        FORBIDDEN: "#ffffff",
-    }[kind]
+# Light tints of each edge colour. A white fill with a 1px border is accurate to
+# the boxes but illegible at README display size: the legend read as two identical
+# white squares, and the planned/forbidden distinction disappeared with it.
+_TINT = {
+    IMPLEMENTED: "#e8f0f9",
+    PLANNED: "#f3f4f6",
+    FORBIDDEN: "#fbeceb",
+}
+
+# Tint keyed by EDGE colour, so a swatch always matches the box it stands for
+# regardless of which stage type produced that colour.
+_TINT_BY_EDGE = {
+    BLUE: "#e8f0f9",
+    ORANGE: "#fbeee0",
+    GREY: "#f3f4f6",
+    RED: "#fbeceb",
+}
+
+
+def _fill(kind: str, edge: str | None = None) -> str:
+    if edge is not None:
+        return _TINT_BY_EDGE.get(edge, _TINT[kind])
+    return _TINT[kind]
 
 
 def _edge(kind: str) -> str:
@@ -134,8 +151,19 @@ def _box(
     size: float = 8.0,
     style: str = "round,pad=0.02,rounding_size=0.02",
     zorder: int = 3,
-) -> None:
-    """One stage box. Label may contain newlines; centred on the box."""
+) -> float:
+    """One stage box. Label may contain newlines. Returns the height used.
+
+    Like :func:`_multiline_box`, ``h`` is a MINIMUM and the box grows when the
+    label wraps to more lines than the height allows. A centred multi-line label
+    in a fixed-height box overflows symmetrically, so the first and last lines end
+    up outside the border -- which is exactly what happened to every box in
+    data-integration until the height was measured instead of assumed.
+    """
+    lines = label.count("\n") + 1 if label else 0
+    text_h = lines * _text_height(ax, size) * 1.35 if lines else 0.0
+    h = max(h, text_h + 2 * _pt(ax, 4.5))
+
     ax.add_patch(
         FancyBboxPatch(
             (x, y),
@@ -160,6 +188,7 @@ def _box(
         linespacing=1.35,
         zorder=zorder + 1,
     )
+    return h
 
 
 def _arrow(
@@ -229,10 +258,23 @@ def _band(ax, x: float, y: float, w: float, h: float, label: str) -> None:
     )
 
 
-def _legend(ax, entries: list[tuple[str, str]], *, loc: str = "lower left") -> None:
+def _legend(
+    ax,
+    entries: list[tuple[str, str, str]],
+    *,
+    loc: str = "lower left",
+) -> None:
+    """Legend whose swatches are true miniatures of the boxes they stand for."""
+    # The swatch is a miniature of the box it stands for, so its fill must follow
+    # its edge colour rather than one hardcoded tint shared by every entry.
     handles = [
-        mpatches.Patch(facecolor="#ffffff", edgecolor=color, linewidth=1.3, label=label)
-        for label, color in entries
+        mpatches.Patch(
+            facecolor=_TINT_BY_EDGE.get(color, _TINT[kind]),
+            edgecolor=color,
+            linewidth=1.5,
+            label=label,
+        )
+        for label, color, kind in entries
     ]
     leg = ax.legend(
         handles=handles,
@@ -332,28 +374,29 @@ def _multiline_box(
     head_size: float = 8.0,
     note_size: float = 6.6,
     zorder: int = 3,
-) -> None:
-    """A box whose explanatory note lives INSIDE it.
+) -> float:
+    """A box with its explanatory note inside it. Returns the height actually used.
 
-    Notes placed beside a box are inevitably crossed by the connector that runs past
-    them, so they go inside where nothing can overlap them.
+    Notes placed beside a box get crossed by the connector running past them, so
+    they live inside the box. The hard part is height: matplotlib's rendered text
+    extent is roughly 1.8x the em box, so a height derived from font size alone
+    leaves captions overlapping their headings and escaping the bottom border.
 
-    ``h`` is treated as a MINIMUM: the box grows when the note wraps to more lines
-    than the height allows. Sizing a box to a fixed height while its caption wraps
-    to three lines is what pushes the last line through the bottom border.
+    Rather than estimate, this measures. `_text_height` reads the renderer's own
+    extent for a probe string, and the block is laid out from that. Every value
+    that varies with fontsize, figsize or dpi is therefore measured at the size it
+    is drawn, and the box grows to whatever the text actually needs.
     """
     lines = note.count("\n") + 1 if note else 0
-    # Measured, not estimated: a single 6.6pt line occupies ~1.8x the em box, so
-    # deriving the height from font size alone understates it and overlaps the text.
-    line_h = _text_height(ax, note_size) * 1.45
-    head_h = _text_height(ax, head_size) * 1.30
-    pad = _pt(ax, 4.0)
-    block_h = head_h + (lines * line_h if lines else 0.0)
-    needed = block_h + 2 * pad
-    h = max(h, needed)
-    # Centre the head+note block vertically. Anchoring the note to the box bottom
-    # instead makes a box that is TALLER than needed push its own caption outside.
-    block_bottom = y + (h - block_h) / 2
+    head_h = _text_height(ax, head_size) * 1.32
+    line_h = _text_height(ax, note_size) * 1.46 if lines else 0.0
+    gap = _pt(ax, 2.2)
+    pad = _pt(ax, 4.5)
+
+    block_h = head_h + (gap + lines * line_h if lines else 0.0)
+    h = max(h, block_h + 2 * pad)
+    top = y + h
+    block_top = y + pad + block_h
 
     ax.add_patch(
         FancyBboxPatch(
@@ -367,43 +410,30 @@ def _multiline_box(
             zorder=zorder,
         )
     )
+    ax.text(
+        x + w / 2,
+        block_top,
+        head,
+        ha="center",
+        va="top",
+        fontsize=head_size,
+        fontweight="bold",
+        color=INK if kind != PLANNED else "#5c6470",
+        zorder=zorder + 1,
+    )
     if lines:
         ax.text(
             x + w / 2,
-            block_bottom + block_h - head_h / 2,
-            head,
-            ha="center",
-            va="center",
-            fontsize=head_size,
-            fontweight="bold",
-            color=INK if kind != PLANNED else "#5c6470",
-            zorder=zorder + 1,
-        )
-        # va="top", not "center": matplotlib expands a multi-line block upward from
-        # the anchor, so centring it places the first line over the heading.
-        ax.text(
-            x + w / 2,
-            block_bottom + head_h + lines * line_h,
+            block_top - head_h - gap,
             note,
             ha="center",
             va="top",
             fontsize=note_size,
             color="#7c848f",
-            linespacing=1.42,
+            linespacing=1.46,
             zorder=zorder + 1,
         )
-    else:
-        ax.text(
-            x + w / 2,
-            block_bottom + block_h / 2,
-            head,
-            ha="center",
-            va="center",
-            fontsize=head_size,
-            fontweight="bold",
-            color=INK if kind != PLANNED else "#5c6470",
-            zorder=zorder + 1,
-        )
+    return h
 
 
 def architecture(out_path: str | Path) -> str:
@@ -536,8 +566,8 @@ def architecture(out_path: str | Path) -> str:
     _legend(
         ax,
         [
-            ("implemented, executed, tested", BLUE),
-            ("designed for, not yet built", GREY),
+            ("implemented, executed, tested", BLUE, IMPLEMENTED),
+            ("designed for, not yet built", GREY, PLANNED),
         ],
         loc="upper right",
     )
@@ -602,26 +632,48 @@ def research_workflow(out_path: str | Path) -> str:
         if i < len(steps) - 1:
             _arrow(ax, x + w, y + h / 2, x + w + gap, y + h / 2)
 
-    # the loop back: a result either supports the framing or revises it
+    # The loop back: a result either supports the framing or revises it. Drawn as
+    # ONE path with a single arrowhead, so no corner looks like it points at nothing.
     last_x = 0.012 + (len(steps) - 1) * (w + gap)
-    _arrow(ax, last_x + w / 2, y, last_x + w / 2, 0.135, color="#4a5058", rad=0.0)
-    _arrow(ax, last_x + w / 2, 0.135, 0.061, 0.135, color="#4a5058")
-    _arrow(ax, 0.061, 0.135, 0.061, y, color=ORANGE)
+    loop_y = 0.150
+    tail_x = last_x + w / 2
+    head_x = 0.012 + w / 2
+    ax.plot(
+        [tail_x, tail_x, head_x, head_x],
+        [y, loop_y, loop_y, y],
+        color="#4a5058",
+        linewidth=1.15,
+        solid_capstyle="round",
+        zorder=2,
+    )
+    ax.annotate(
+        "",
+        xy=(head_x, y),
+        xytext=(head_x, loop_y),
+        arrowprops={"arrowstyle": "-|>", "color": ORANGE, "linewidth": 1.4,
+                    "mutation_scale": 11, "shrinkA": 0, "shrinkB": 2},
+        zorder=5,
+    )
     ax.text(
         0.500,
-        0.108,
+        loop_y - 0.055,
         "a result that cannot change the framing was not worth running",
         ha="center",
         va="center",
         fontsize=7.4,
         color="#5c6470",
         style="italic",
+        bbox={"facecolor": "white", "edgecolor": "none", "pad": 1.2},
     )
 
     _legend(
         ax,
-        [("done", BLUE), ("planned — no artifact yet", GREY)],
-        loc="lower left",
+        [
+            ("done", BLUE, IMPLEMENTED),
+            ("planned — no artifact yet", GREY, PLANNED),
+            ("where the study starts", ORANGE, IMPLEMENTED),
+        ],
+        loc="upper right",
     )
     return _finish(fig, ax, Path(out_path))
 
@@ -853,6 +905,15 @@ def temporal_leakage(out_path: str | Path) -> str:
         color="#5c6470",
         style="italic",
     )
+    _legend(
+        ax,
+        [
+            ("information may flow forward in time", BLUE, IMPLEMENTED),
+            ("scored only — nothing is fitted here", ORANGE, IMPLEMENTED),
+            ("this direction is forbidden", RED, FORBIDDEN),
+        ],
+        loc="lower left",
+    )
     ax.set_ylim(0.02, 1.0)
     return _finish(fig, ax, Path(out_path))
 
@@ -952,8 +1013,8 @@ def graph_methodology(out_path: str | Path) -> str:
     _legend(
         ax,
         [
-            ("permitted construction", BLUE),
-            ("forbidden: future edges reach the past", RED),
+            ("permitted construction", BLUE, IMPLEMENTED),
+            ("forbidden: future edges reach the past", RED, FORBIDDEN),
         ],
         loc="lower left",
     )
@@ -966,9 +1027,14 @@ def evidence_lineage(out_path: str | Path) -> str:
 
     Reading right-to-left is the audit path a reviewer takes; left-to-right is the
     path an analyst takes when investigating an alert.
+
+    The evidence store is drawn as the column it actually is, joined by a line to
+    every stage, rather than being left to a sentence in the subtitle: it is the
+    only thing that connects a score back to the rows that produced it, so leaving
+    it implicit made the figure's central claim invisible.
     """
     _style()
-    fig, ax = plt.subplots(figsize=(11.0, 3.6))
+    fig, ax = plt.subplots(figsize=(11.6, 4.2))
     _title(fig, "Any anomaly walks back to its source records and forward to the experiment that measured it")
     _subtitle(
         fig,
@@ -976,19 +1042,25 @@ def evidence_lineage(out_path: str | Path) -> str:
     )
 
     stages = [
-        ("Source\nrecord", BLUE),
-        ("Canonical\nevent", BLUE),
-        ("Feature value\n+ registry\nfingerprint", BLUE),
-        ("Model", GREY),
-        ("Score", GREY),
-        ("Anomaly", GREY),
-        ("Explanation\ncontributing\nfeatures", GREY),
-        ("Experiment\nrecord", GREY),
+        ("Source\nrecord", BLUE, IMPLEMENTED),
+        ("Canonical\nevent", BLUE, IMPLEMENTED),
+        ("Feature value\n+ registry\nfingerprint", BLUE, IMPLEMENTED),
+        ("Model", GREY, PLANNED),
+        ("Score", GREY, PLANNED),
+        ("Anomaly", GREY, PLANNED),
+        ("Explanation\ncontributing\nfeatures", GREY, PLANNED),
+        ("Experiment\nrecord", GREY, PLANNED),
     ]
-    w, gap, y, h = 0.104, 0.0212, 0.400, 0.270
-    for i, (label, color) in enumerate(stages):
-        x = 0.012 + i * (w + gap)
-        kind = IMPLEMENTED if color == BLUE else PLANNED
+    # Widths are derived from the row length so the last box is never clipped.
+    left, right = 0.012, 0.988
+    gap = 0.040
+    w = (right - left - gap * (len(stages) - 1)) / len(stages)
+    y, h = 0.560, 0.235
+
+    centres: list[float] = []
+    for idx, (label, color, kind) in enumerate(stages):
+        x = left + idx * (w + gap)
+        centres.append(x + w / 2)
         ax.add_patch(
             FancyBboxPatch(
                 (x, y),
@@ -997,7 +1069,7 @@ def evidence_lineage(out_path: str | Path) -> str:
                 boxstyle="round,pad=0.006,rounding_size=0.02",
                 linewidth=1.35,
                 edgecolor=_edge(kind),
-                facecolor="#ffffff",
+                facecolor=_fill(kind),
                 zorder=3,
             )
         )
@@ -1012,32 +1084,72 @@ def evidence_lineage(out_path: str | Path) -> str:
             linespacing=1.4,
             zorder=4,
         )
-        if i < len(stages) - 1:
-            _arrow(ax, x + w, y + h / 2, x + w + gap, y + h / 2, color=GREY if kind == PLANNED else BLUE)
+        if idx < len(stages) - 1:
+            _arrow(
+                ax,
+                x + w,
+                y + h / 2,
+                x + w + gap,
+                y + h / 2,
+                color=BLUE if kind == IMPLEMENTED else GREY,
+            )
+
+    # The evidence store spans the whole chain: every stage is a row it can point at.
+    store_y, store_h = 0.215, 0.130
+    ax.add_patch(
+        FancyBboxPatch(
+            (left, store_y),
+            right - left,
+            store_h,
+            boxstyle="round,pad=0.004,rounding_size=0.016",
+            linewidth=1.4,
+            edgecolor=_edge(PLANNED),
+            facecolor=_fill(PLANNED),
+            zorder=3,
+        )
+    )
+    ax.text(
+        0.500,
+        store_y + store_h / 2,
+        "Evidence store  \u2014  one row per score: contributing feature values, model weights, run fingerprint",
+        ha="center",
+        va="center",
+        fontsize=7.2,
+        color="#5c6470",
+        zorder=4,
+    )
+    for cx in centres:
+        ax.plot(
+            [cx, cx],
+            [store_y + store_h, y],
+            color=GREY,
+            linewidth=0.9,
+            linestyle=(0, (2.5, 2.5)),
+            zorder=2,
+        )
 
     ax.text(
         0.500,
-        0.255,
-        "analyst investigates an alert  ←",
+        0.455,
+        "analyst investigates an alert  \u2190   \u00b7   \u2192  reviewer audits a claim: same fingerprint, same feature definitions",
         ha="center",
         va="center",
         fontsize=7.6,
         color="#5c6470",
-    )
-    ax.text(
-        0.500,
-        0.150,
-        "→  reviewer audits a claim: same fingerprint, same feature definitions",
-        ha="center",
-        va="center",
-        fontsize=7.6,
-        color="#5c6470",
+        # The dashed drop-lines pass behind this line; an opaque backing keeps the
+        # text readable instead of letting dashes run through the words.
+        bbox={"facecolor": "white", "edgecolor": "none", "pad": 2.0},
+        zorder=5,
     )
     _legend(
         ax,
-        [("implemented", BLUE), ("designed for, not yet built", GREY)],
+        [
+            ("implemented", BLUE, IMPLEMENTED),
+            ("designed for, not yet built", GREY, PLANNED),
+        ],
         loc="lower left",
     )
+    ax.set_ylim(0.03, 1.0)
     return _finish(fig, ax, Path(out_path))
 
 
