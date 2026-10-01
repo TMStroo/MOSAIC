@@ -28,9 +28,9 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
-import matplotlib.patches as mpatches  # noqa: E402
-import matplotlib.pyplot as plt  # noqa: E402
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch  # noqa: E402
+import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
 
 # Palette. Deliberately small: a figure that needs six hues to be read is a
 # figure with too much in it.
@@ -1229,7 +1229,7 @@ def evidence_lineage(out_path: str | Path) -> str:
     y, h = 0.560, 0.235
 
     centres: list[float] = []
-    for idx, (label, color, kind) in enumerate(stages):
+    for idx, (label, _color, kind) in enumerate(stages):
         x = left + idx * (w + gap)
         centres.append(x + w / 2)
         ax.add_patch(

@@ -151,7 +151,9 @@ def test_future_edges_do_not_change_earlier_graph_features():
     )
     assert max(
         abs(a - b)
-        for a, b in zip(early_rank["graph_pagerank"], late_rank["graph_pagerank"])
+        for a, b in zip(
+            early_rank["graph_pagerank"], late_rank["graph_pagerank"], strict=True
+        )
     ) < 1e-3
 
 

@@ -108,7 +108,6 @@ def evaluate_resolution(
         return {"error": "no references could be joined to the truth map"}
 
     # Build the contingency between predicted cluster and true entity.
-    pairs = scored.select("entity_id", "entity_key").unique()
     n_true_entities = int(scored["entity_key"].n_unique())
     n_pred_clusters = int(scored["entity_id"].n_unique())
 
@@ -119,18 +118,12 @@ def evaluate_resolution(
         pl.len().alias("refs"),
     )
     total_refs = int(scored.height)
-    pure_refs = int(
-        scored.group_by("entity_id")
-        .agg((pl.col("entity_key").n_unique() == 1).sum().alias("n"))
-        .get_column("n")
-        .sum()
-    )
     # A cluster is pure if it contains exactly one true entity. Correct assignment
     # for a reference = it is in a pure cluster AND that cluster is the whole truth
     # group. Undersized clusters (a truth group split in two) are false negatives.
     truth_sizes = scored.group_by("entity_key").agg(pl.len().alias("refs"))
     correct = 0
-    for cluster_id, sub in scored.group_by("entity_id"):
+    for _cluster_id, sub in scored.group_by("entity_id"):
         entities = sub["entity_key"].unique()
         if len(entities) == 1:
             key = entities[0]
@@ -253,11 +246,11 @@ def _blocking_recall(candidates: pl.DataFrame, key_for: dict[str, str]) -> dict[
     by_entity: dict[str, list[str]] = defaultdict(list)
     for ref, key in key_for.items():
         by_entity[key].append(ref)
-    for key, refs in by_entity.items():
+    for _key, refs in by_entity.items():
         unique = sorted(set(refs))
         true_total += len(unique) * (len(unique) - 1) // 2
     pair_set = {(a, b) if a < b else (b, a) for a, b in zip(left, right, strict=True)}
-    for key, refs in by_entity.items():
+    for _key, refs in by_entity.items():
         unique = sorted(set(refs))
         for i, a in enumerate(unique):
             for b in unique[i + 1 :]:

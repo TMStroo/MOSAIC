@@ -127,9 +127,6 @@ def build_quality_report(
     lookups = {
         r.check: r for r in validation.results if r.check.startswith("duplicate_records")
     }
-    invalid_lookups = {
-        r.check: r for r in validation.results if r.check.startswith("out_of_range_values")
-    }
 
     numeric_cols = [c for c in ("event_value", "source_confidence") if c in frame.columns]
     distributions: dict[str, dict[str, float]] = {}

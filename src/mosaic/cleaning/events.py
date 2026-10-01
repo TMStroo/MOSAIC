@@ -25,7 +25,7 @@ from typing import Any, Literal
 import polars as pl
 
 from mosaic.schema.canonical import EventType
-from mosaic.schema.ids import event_id  # noqa: F401  (re-exported for adapters)
+from mosaic.schema.ids import event_id
 
 TIMESTAMP_FORMATS = (
     "%Y-%m-%dT%H:%M:%S",

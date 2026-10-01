@@ -38,6 +38,13 @@ from typing import Any, Literal
 
 import polars as pl
 
+from mosaic.experiments._polars_extremes import (
+    datetime_max,
+    datetime_min,
+    float_mean,
+    float_sum,
+)
+
 LOGGER = logging.getLogger(__name__)
 
 Period = Literal["train", "validation", "backtest", "forward", "unassigned"]
@@ -126,7 +133,8 @@ class SplitPlan:
                 "split: %d of %d rows unassigned; observed span is %s..%s, unassigned rows span %s..%s",
                 unassigned.height, frame.height,
                 self.observed_start, self.observed_end,
-                unassigned[timestamp_column].min(), unassigned[timestamp_column].max(),
+                datetime_min(unassigned[timestamp_column]),
+                datetime_max(unassigned[timestamp_column]),
             )
         del cuts
         return out
@@ -162,7 +170,7 @@ def observed_range(frame: pl.DataFrame, *, timestamp_column: str = "timestamp") 
     series = frame[timestamp_column].drop_nulls()
     if series.is_empty():
         raise ValueError(f"column {timestamp_column!r} has no non-null values")
-    return series.min(), series.max()
+    return datetime_min(series), datetime_max(series)
 
 
 def build_split_plan(
@@ -270,7 +278,7 @@ class FittedOn:
                 f"but asked to transform {target_period}; that is backward in time"
             )
         if target_frame is not None and "timestamp" in target_frame.columns and not target_frame.is_empty():
-            earliest = target_frame["timestamp"].min()
+            earliest = datetime_min(target_frame["timestamp"])
             if earliest < self.fitted_through:
                 raise LeakageError(
                     f"{self.name}: fitted through {self.fitted_through} but {target_period} "
@@ -293,11 +301,11 @@ def assert_no_forward_rows(
     """Explicit invariant: evaluation rows never precede training rows."""
     if train.is_empty() or evaluation.is_empty():
         return
-    if evaluation[timestamp_column].min() < train[timestamp_column].max():
+    if datetime_min(evaluation[timestamp_column]) < datetime_max(train[timestamp_column]):
         raise LeakageError(
             "evaluation period overlaps training: "
-            f"evaluation starts {evaluation[timestamp_column].min()} but training runs to "
-            f"{train[timestamp_column].max()}"
+            f"evaluation starts {datetime_min(evaluation[timestamp_column])} but training runs to "
+            f"{datetime_max(train[timestamp_column])}"
         )
 
 
@@ -323,15 +331,27 @@ def summarize_splits(plan: SplitPlan, frame: pl.DataFrame) -> dict[str, Any]:
         part = period_frames(frame, name)
         entry: dict[str, Any] = {"rows": part.height}
         if part.height:
-            entry["start"] = str(part["timestamp"].min())
-            entry["end"] = str(part["timestamp"].max())
-            entry["days"] = round(
-                (part["timestamp"].max() - part["timestamp"].min()).total_seconds() / 86400, 2
-            )
+            start = datetime_min(part["timestamp"])
+            end = datetime_max(part["timestamp"])
+            entry["start"] = str(start)
+            entry["end"] = str(end)
+            entry["days"] = round((end - start).total_seconds() / 86400, 2)
             if "is_anomaly" in part.columns:
-                rate = float(part["is_anomaly"].mean() or 0.0)
-                entry["anomaly_rate"] = round(rate, 6)
-                entry["positives"] = int(part["is_anomaly"].sum())
+                # No `or 0.0` fallback: an all-null label column means the rate is
+                # unknown, and reporting 0.0 would state "this period had no
+                # anomalies" when nothing was actually known. The key is then
+                # absent, which is distinguishable from a genuine 0.0.
+                try:
+                    rate = float_mean(part["is_anomaly"])
+                except ValueError:
+                    LOGGER.warning(
+                        "period %s has a non-empty frame but no non-null is_anomaly "
+                        "values; reporting the rate as unknown rather than 0.0",
+                        name,
+                    )
+                else:
+                    entry["anomaly_rate"] = round(rate, 6)
+                    entry["positives"] = float_sum(part["is_anomaly"])
         out[name] = entry
     out["_plan"] = plan.to_dict()
     return out

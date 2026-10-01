@@ -282,8 +282,6 @@ def compute_features(
             frame = add_graph_features(frame, relations, entity_column=entity_column, time_column=time_column)
 
     frame = frame.sort([entity_column, time_column, "event_id"], nulls_last=True)
-    present = set(frame.columns)
-    feature_names = [n for n in registry.names() if n in present]
     return frame, registry, metrics
 
 

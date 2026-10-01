@@ -157,7 +157,7 @@ class FeatureRegistry:
     def load(cls, path: Path | str) -> FeatureRegistry:
         data = json.loads(Path(path).read_text(encoding="utf-8"))
         registry = cls(version=data["version"])
-        for name, spec in data["features"].items():
+        for spec in data["features"].values():
             registry.register(
                 FeatureSpec(
                     name=spec["name"],

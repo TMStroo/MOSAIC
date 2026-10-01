@@ -10,9 +10,8 @@ Looking at images finds these. It does not prove they are gone.
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import re
+from pathlib import Path
 
 import matplotlib
 
@@ -325,7 +324,6 @@ def test_every_edge_colour_in_a_figure_appears_in_its_legend() -> None:
         fig, captured = _capture(fn, name)
         leg = captured.get_legend()
         if leg is None:
-            rects = _rects(captured)
             coded = {
                 _rgb(p.get_edgecolor())
                 for p in captured.patches
@@ -397,7 +395,6 @@ def test_no_text_escapes_the_box_it_belongs_to() -> None:
         fig.canvas.draw()
         rects = _rects(captured)
         bands = _rects(captured, content_only=False)
-        band_set = {tuple(round(v, 4) for v in b) for b in bands if b[2] > 0.5}
         for artist in captured.texts:
             body = artist.get_text().strip()
             if not body:

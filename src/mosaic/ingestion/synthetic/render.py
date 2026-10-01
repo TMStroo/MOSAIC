@@ -225,14 +225,17 @@ def render_source(
     # that source uses for it, so the lookup is cats[latent], not the other way
     # round. Getting this backwards is silent: every row would arrive carrying a
     # canonical label that the adapter's dictionary cannot resolve.
-    for latent, weight in allowed.items():
+    # Iterating `cats` rather than `allowed`: this loop maps a latent type to one
+    # of its native labels uniformly, so the observation weight in `allowed` is
+    # not involved (it is applied above, when deciding which events this source
+    # saw at all). Reading the weight here would look like it was meant to bias
+    # the choice and silently do nothing.
+    for latent in cats:
         mask = etypes == latent
         k = int(mask.sum())
         if not k:
             continue
-        choices = sorted(cats.get(latent, ()))
-        if not choices:  # latent type the source declares but does not label
-            continue
+        choices = sorted(cats[latent])
         native_cat[mask] = rng_evt.choice(choices, size=k)
 
     # cross-source disagreement: the source reports a *different* category and a

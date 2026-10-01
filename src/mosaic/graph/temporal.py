@@ -276,8 +276,16 @@ def betweenness(graph: nx.DiGraph) -> dict[str, float]:
     return nx.betweenness_centrality(graph, weight=None, normalized=True)
 
 
-def communities(graph: nx.DiGraph, *, seed: int = 0) -> dict[str, int]:
-    """Community labels. Deterministic given ``seed`` so results are reproducible."""
+def communities(graph: nx.DiGraph) -> dict[str, int]:
+    """Community labels.
+
+    Deterministic without a seed argument: greedy modularity on an undirected
+    view is order-independent, and the returned labels are assigned by a total
+    order on (size, smallest member) rather than by the algorithm's internal
+    iteration. There was a ``seed`` parameter that was never read and never
+    passed; leaving it in the signature would have implied a knob that does
+    nothing.
+    """
     if graph.number_of_nodes() == 0:
         return {}
     undirected = graph.to_undirected()
@@ -322,7 +330,6 @@ def snapshot_features(
     related_column: str = "related_entity_refs",
     snapshot_interval_seconds: int = 6 * HOUR,
     new_neighbor_window: int = 7 * DAY,
-    progress: bool = False,
 ) -> tuple[pl.DataFrame, list[StageMetrics]]:
     """Attach causal graph features to every event row.
 
