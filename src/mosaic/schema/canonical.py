@@ -30,7 +30,7 @@ class StrictModel(BaseModel):
     model_config = ConfigDict(extra="forbid", frozen=True, validate_assignment=True)
 
 
-class EventType(str, enum.Enum):
+class EventType(enum.StrEnum):
     """Canonical event taxonomy.
 
     Source-specific event types are preserved in ``event_metadata['source_event_type']``
@@ -47,7 +47,7 @@ class EventType(str, enum.Enum):
     OTHER = "other"
 
 
-class AnomalyFamily(str, enum.Enum):
+class AnomalyFamily(enum.StrEnum):
     """Anomaly taxonomy used by the synthetic generator and by evaluation.
 
     The same enum is used for injected (synthetic) and natural (public-dataset)

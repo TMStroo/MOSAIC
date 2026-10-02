@@ -23,6 +23,7 @@ Metrics reported
 
 from __future__ import annotations
 
+from collections import defaultdict
 from dataclasses import dataclass
 from typing import Any
 
@@ -241,8 +242,6 @@ def _blocking_recall(candidates: pl.DataFrame, key_for: dict[str, str]) -> dict[
     true_total = 0
     found = 0
     # ground truth: for each true entity, the number of cross-source ref pairs
-    from collections import defaultdict
-
     by_entity: dict[str, list[str]] = defaultdict(list)
     for ref, key in key_for.items():
         by_entity[key].append(ref)

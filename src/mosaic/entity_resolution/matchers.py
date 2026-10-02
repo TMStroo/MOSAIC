@@ -32,7 +32,7 @@ import math
 import re
 from collections import Counter
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, ClassVar, Literal
 
 import numpy as np
 import polars as pl
@@ -333,7 +333,11 @@ class SimilarityMatcher(Matcher):
     """
 
     name: MatcherName = "similarity"
-    WEIGHTS = {"dice_bigram": 0.40, "edit_similarity": 0.35, "jaccard_token": 0.25}
+    #: ClassVar: these are fixed, documented, deliberately untuned weights. Declaring
+    #: them ClassVar is also what stops an instance from shadowing the constant.
+    WEIGHTS: ClassVar[dict[str, float]] = {
+        "dice_bigram": 0.40, "edit_similarity": 0.35, "jaccard_token": 0.25,
+    }
 
     def score(self, feats: dict[str, np.ndarray], frame: pl.DataFrame) -> tuple[np.ndarray, dict[str, Any]]:
         blend = sum(w * feats[k] for k, w in self.WEIGHTS.items())

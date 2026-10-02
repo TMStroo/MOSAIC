@@ -26,7 +26,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import Any, ClassVar
 
 import numpy as np
 import polars as pl
@@ -231,7 +231,8 @@ class SyntheticSpec:
         "distribution",
     )
     #: Families whose budget is a count of *groups* (each group labels many events).
-    GROUP_FAMILIES = {"collective": 45, "temporal": 90}
+    #: ClassVar: a fixed budget map, never mutated per-instance.
+    GROUP_FAMILIES: ClassVar[dict[str, int]] = {"collective": 45, "temporal": 90}
 
     def family_budgets(self) -> dict[str, int]:
         """Split the event budget across families, deterministically.
@@ -739,6 +740,22 @@ def _inject_er_noise(spec: SyntheticSpec, rng: np.random.Generator) -> dict[str,
 # ----------------------------------------------------------------- outputs
 def _latent_frame(spec: SyntheticSpec, s: Stream) -> pl.DataFrame:
     t0 = _epoch0(spec)
+    # Per-event family flags, one Int8 column per injected family. The
+    # aggregate ``labels.parquet`` deliberately records only a target
+    # (entity / window / event) and its span, which is lossy for the families
+    # whose anomaly is a *set* of events: a collective burst moves ~45 events
+    # by ~45 distinct entities into one 2.5h window, but the label's
+    # ``started_at``/``ended_at`` can span months because donors are drawn
+    # from across the stream. Resolving that span marks hundreds of ordinary
+    # events positive. These flags are the exact injected events, so
+    # ``mosaic.labels`` can resolve them without widening the span.
+    #
+    # This is additive: no existing column changes, and no existing artifact or
+    # published result depends on these names.
+    family_flags = {
+        f"fam_{name}": s.fam[name].astype(int).tolist()
+        for name in sorted(s.fam)
+    }
     return pl.DataFrame(
         {
             "latent_id": s.latent_id,
@@ -749,6 +766,7 @@ def _latent_frame(spec: SyntheticSpec, s: Stream) -> pl.DataFrame:
             "event_value": s.value.tolist(),
             "location_id": [f"Z{int(x):03d}" for x in s.location],
             "day_index": ((s.t - t0) // DAY).astype(int).tolist(),
+            **family_flags,
         }
     )
 

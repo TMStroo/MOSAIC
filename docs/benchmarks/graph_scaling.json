@@ -1,0 +1,127 @@
+{
+  "generated_utc": "2026-10-01T21:25:50.449256+00:00",
+  "hardware": {
+    "platform": "Windows-11-10.0.26300-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "logical_cpus": 24,
+    "python": "3.12.12",
+    "polars": "1.44.2"
+  },
+  "seed": 20260901,
+  "sizes_requested": [
+    100000,
+    250000,
+    500000,
+    1000000,
+    2000000
+  ],
+  "extended_attempted": false,
+  "note": "Timings are wall-clock for this machine and this run only. No size beyond those listed in `runs` with timings was measured, and none is claimed. peak_rss_mb is filled in from a separate memory-only re-run of the same seeds (the first sweep used a machine-wide counter that does not move with the benchmark and was discarded).",
+  "runs": [
+    {
+      "target_events": 100000,
+      "rows_clean": 119112,
+      "rows_raw": 120739,
+      "n_entities": 31,
+      "relations": 56438,
+      "graph_nodes": 31,
+      "graph_edges": 127,
+      "relational_stage_s": 17.421260400000165,
+      "timings": {
+        "generate_s": 1.593,
+        "ingest_clean_s": 0.585,
+        "entity_resolution_s": 0.018,
+        "peer_resolution_s": 0.026,
+        "graph_construction_s": 0.003,
+        "snapshot_features_s": 17.987,
+        "total_s": 20.212
+      },
+      "events": 119112
+    },
+    {
+      "target_events": 250000,
+      "rows_clean": 253603,
+      "rows_raw": 257907,
+      "n_entities": 78,
+      "relations": 100958,
+      "graph_nodes": 78,
+      "graph_edges": 370,
+      "relational_stage_s": 29.081972199999882,
+      "timings": {
+        "generate_s": 9.176,
+        "ingest_clean_s": 1.845,
+        "entity_resolution_s": 0.071,
+        "peer_resolution_s": 0.058,
+        "graph_construction_s": 0.006,
+        "snapshot_features_s": 30.376,
+        "total_s": 41.531
+      },
+      "events": 253603
+    },
+    {
+      "target_events": 500000,
+      "rows_clean": 520058,
+      "rows_raw": 527794,
+      "n_entities": 157,
+      "relations": 231354,
+      "graph_nodes": 157,
+      "graph_edges": 746,
+      "relational_stage_s": 57.78842060000011,
+      "timings": {
+        "generate_s": 39.055,
+        "ingest_clean_s": 3.682,
+        "entity_resolution_s": 0.073,
+        "peer_resolution_s": 0.111,
+        "graph_construction_s": 0.01,
+        "snapshot_features_s": 60.674,
+        "total_s": 103.605
+      },
+      "events": 520058,
+      "peak_rss_mb": 5249.3,
+      "memory_method": "GetProcessMemoryInfo PeakWorkingSetSize, this process"
+    },
+    {
+      "target_events": 1000000,
+      "rows_clean": 934525,
+      "rows_raw": 957580,
+      "n_entities": 313,
+      "relations": 414271,
+      "graph_nodes": 313,
+      "graph_edges": 1606,
+      "relational_stage_s": 137.48085500000025,
+      "timings": {
+        "generate_s": 163.838,
+        "ingest_clean_s": 6.634,
+        "entity_resolution_s": 0.13,
+        "peer_resolution_s": 0.228,
+        "graph_construction_s": 0.028,
+        "snapshot_features_s": 143.076,
+        "total_s": 313.933
+      },
+      "events": 934525
+    },
+    {
+      "target_events": 2000000,
+      "rows_clean": 1868839,
+      "rows_raw": 1906458,
+      "n_entities": 630,
+      "relations": 880849,
+      "graph_nodes": 630,
+      "graph_edges": 3082,
+      "relational_stage_s": 385.7878439000001,
+      "timings": {
+        "generate_s": 816.74,
+        "ingest_clean_s": 13.177,
+        "entity_resolution_s": 0.277,
+        "peer_resolution_s": 0.544,
+        "graph_construction_s": 0.059,
+        "snapshot_features_s": 398.445,
+        "total_s": 1229.242
+      },
+      "events": 1868839,
+      "peak_rss_mb": 16833.2,
+      "memory_method": "GetProcessMemoryInfo PeakWorkingSetSize, this process"
+    }
+  ],
+  "peak_rss_mb_coverage": "measured at [500000, 2000000] target sizes only; absent elsewhere by design, not zero and not estimated"
+}

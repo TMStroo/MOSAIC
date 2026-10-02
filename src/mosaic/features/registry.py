@@ -23,21 +23,21 @@ from __future__ import annotations
 import json
 from collections.abc import Iterable
 from dataclasses import asdict, dataclass, field
-from enum import Enum
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
 from mosaic.schema.ids import stable_hash
 
 
-class LeakageClass(str, Enum):
+class LeakageClass(StrEnum):
     CAUSAL = "causal"
     FITTED = "fitted"
     SPLIT_ONLY = "split_only"
     FORBIDDEN = "forbidden"
 
 
-class FeatureFamily(str, Enum):
+class FeatureFamily(StrEnum):
     FREQUENCY = "frequency"
     STATISTICAL = "statistical"
     TEMPORAL = "temporal"

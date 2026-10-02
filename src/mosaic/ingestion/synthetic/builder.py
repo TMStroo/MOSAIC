@@ -112,7 +112,15 @@ def write_world(spec: SyntheticSpec, root: Path | str, *, world: SyntheticWorld 
     truth_dir = base / TRUTH_DIR
     write_parquet(truth_dir / "labels.parquet", w.truth)
     write_parquet(truth_dir / "entity_links.parquet", links)
-    latent = w.events.select("latent_id", "entity_key", "related_key", "event_type", "location_id")
+    latent = w.events.select(
+            "latent_id", "entity_key", "related_key", "event_type", "location_id",
+            # Per-event injected-family flags. Needed to resolve the set-level
+            # families (collective / temporal) to the exact injected events
+            # instead of to the label's much wider declared span. Additive: the
+            # five columns above are unchanged, so any reader selecting them by
+            # name is unaffected.
+            *[c for c in w.events.columns if c.startswith("fam_")],
+        )
     write_parquet(truth_dir / "latent_events.parquet", latent)
 
     checksums = {

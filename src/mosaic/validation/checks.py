@@ -20,7 +20,7 @@ import polars as pl
 SEVERITY_ORDER = {"PASS": 0, "WARN": 1, "FAIL": 2}
 
 
-class Status(str, enum.Enum):
+class Status(enum.StrEnum):
     PASS = "PASS"
     WARN = "WARN"
     FAIL = "FAIL"

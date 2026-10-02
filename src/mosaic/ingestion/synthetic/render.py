@@ -12,6 +12,8 @@ case damage on categories, near-duplicate rows, and identifier typos.
 
 from __future__ import annotations
 
+import pathlib
+
 import numpy as np
 import polars as pl
 
@@ -386,8 +388,6 @@ def render_world(
 
 def write_source_parquet(spec: SyntheticSpec, frames: dict[str, pl.DataFrame], root) -> dict[str, int]:
     """Write each source as partitioned Parquet; return row counts."""
-    import pathlib
-
     counts: dict[str, int] = {}
     base = pathlib.Path(root) / spec.name
     for source_id, frame in frames.items():

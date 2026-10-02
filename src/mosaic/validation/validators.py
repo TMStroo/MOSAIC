@@ -80,8 +80,8 @@ def validate_raw(
         _check_id_style(report, source_id, part)
         _check_referential_integrity(report, source_id, part)
         if parsed is not None:
-            _check_ordering(report, source_id, part, parsed)
-            _check_completeness(report, source_id, part, parsed)
+            _check_ordering(report, source_id, parsed)
+            _check_completeness(report, source_id, parsed)
 
     return report
 
@@ -147,7 +147,7 @@ def _check_timestamps(
 
 
 def _check_ordering(
-    report: ValidationReport, source_id: str, part: pl.DataFrame, parsed: pl.Series
+    report: ValidationReport, source_id: str, parsed: pl.Series
 ) -> None:
     """Ingestion should preserve file order; a non-monotonic stream means a
     concatenated/sharded file, which the feature layer must not assume."""
@@ -321,7 +321,7 @@ def _check_referential_integrity(report: ValidationReport, source_id: str, part:
 
 
 def _check_completeness(
-    report: ValidationReport, source_id: str, part: pl.DataFrame, parsed: pl.Series
+    report: ValidationReport, source_id: str, parsed: pl.Series
 ) -> None:
     """Daily volume: detect whole-day gaps (source outages) and volume collapse."""
     if parsed.len() == 0:
