@@ -1,0 +1,124 @@
+{
+ "experiment_id": "E006",
+ "degenerate_operating_points": {
+  "event_only": {
+   "zscore": {
+    "zero_threshold_objectives": [
+     "recall_constrained"
+    ],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": [
+     "recall_constrained"
+    ]
+   },
+   "robust_z": {
+    "zero_threshold_objectives": [
+     "recall_constrained"
+    ],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": [
+     "recall_constrained"
+    ]
+   },
+   "iqr": {
+    "zero_threshold_objectives": [
+     "recall_constrained"
+    ],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": [
+     "recall_constrained"
+    ]
+   },
+   "ewma": {
+    "zero_threshold_objectives": [
+     "recall_constrained"
+    ],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": [
+     "recall_constrained"
+    ]
+   },
+   "changepoint": {
+    "zero_threshold_objectives": [],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": []
+   }
+  },
+  "all_families": {
+   "zscore": {
+    "zero_threshold_objectives": [
+     "f1_max",
+     "recall_constrained"
+    ],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": [
+     "f1_max",
+     "recall_constrained"
+    ]
+   },
+   "robust_z": {
+    "zero_threshold_objectives": [
+     "f1_max",
+     "recall_constrained"
+    ],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": [
+     "f1_max",
+     "recall_constrained"
+    ]
+   },
+   "iqr": {
+    "zero_threshold_objectives": [
+     "f1_max",
+     "recall_constrained"
+    ],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": [
+     "f1_max",
+     "recall_constrained"
+    ]
+   },
+   "ewma": {
+    "zero_threshold_objectives": [
+     "f1_max",
+     "recall_constrained"
+    ],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": [
+     "f1_max",
+     "recall_constrained"
+    ]
+   },
+   "changepoint": {
+    "zero_threshold_objectives": [
+     "recall_constrained"
+    ],
+    "infeasible_objectives": [
+     "precision_constrained"
+    ],
+    "flag_everything": [
+     "recall_constrained"
+    ]
+   }
+  }
+ },
+ "interpretation_rule": "If the zero-threshold detectors are concentrated in one objective, the objective drives the degeneration. If they appear under every objective for the same detector, the detector's scores are the cause. Both outcomes are reportable; neither is hidden."
+}

@@ -35,6 +35,7 @@ from mosaic.labels.resolve import (
     LabelScope,
     assert_labels_never_fitted,
     minimum_support,
+    resolve_both,
     resolve_labels,
     supported_families,
 )
@@ -49,6 +50,7 @@ __all__ = [
     "LabelScope",
     "assert_labels_never_fitted",
     "minimum_support",
+    "resolve_both",
     "resolve_labels",
     "supported_families",
 ]

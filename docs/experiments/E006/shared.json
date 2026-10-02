@@ -1,0 +1,53 @@
+{
+ "experiment_id": "E006",
+ "description": "threshold-selection objective comparison, dual label protocol",
+ "dataset_version": "world_a:1.0.0",
+ "feature_set_id": "fs_b723dcd6c6bc",
+ "feature_set_version": "feature_set_v1",
+ "label_protocols": [
+  "event_only",
+  "all_families"
+ ],
+ "objectives": [
+  {
+   "name": "f1_max",
+   "method": "f1_max",
+   "constraints": {}
+  },
+  {
+   "name": "precision_constrained",
+   "method": "precision_constrained",
+   "constraints": {
+    "min_precision": 0.5
+   }
+  },
+  {
+   "name": "recall_constrained",
+   "method": "recall_constrained",
+   "constraints": {
+    "min_recall": 1.0
+   }
+  },
+  {
+   "name": "fixed_fpr",
+   "method": "fixed_fpr",
+   "constraints": {
+    "target_fpr": 0.01
+   }
+  }
+ ],
+ "held_fixed": [
+  "events",
+  "entity_resolution",
+  "labels",
+  "split_plan",
+  "fitted_state",
+  "features",
+  "detectors",
+  "detector_scores",
+  "validation_period",
+  "metrics",
+  "periods"
+ ],
+ "design_note": "The objective is the only variable. Detector scores are computed once per (detector, period) and reused across objectives, so any difference in the operating point is caused by the objective."
+}

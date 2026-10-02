@@ -126,6 +126,7 @@ class LabelResolution:
     period_counts: dict[str, dict[str, int]] = field(default_factory=dict)
     observability: dict[str, Any] = field(default_factory=dict)
     family_coverage: dict[str, int] = field(default_factory=dict)
+    prevalence: dict[str, dict[str, Any]] = field(default_factory=dict)
     scope: LabelScope = DEFAULT_SCOPE
 
     def summary(self) -> dict[str, Any]:
@@ -139,6 +140,7 @@ class LabelResolution:
             "positive_rate": self.rate,
             "family_counts": dict(sorted(self.family_counts.items())),
             "family_coverage": dict(sorted(self.family_coverage.items())),
+            "prevalence": self.prevalence,
             "event_families": sorted(EVENT_FAMILIES),
             "aggregate_families": sorted(AGGREGATE_FAMILIES),
             "skipped_families": dict(sorted(self.skipped_families.items())),
@@ -262,10 +264,13 @@ def resolve_labels(
     frame = _attach_entity_labels(frame, injected, latent)
     frame = _attach_window_labels(frame, injected, latent)
 
-    frame = _finalize(frame, scope)
+    frame = _finalize(frame)
+    # Per-protocol selection happens after all protocol-independent work, so
+    # resolving once and binding twice is the only supported path.
+    frame = _select_protocol(frame, scope)
 
-    family_counts = _family_counts(frame)
     family_coverage = _family_coverage(frame)
+    family_counts = _family_counts(frame)
     skipped = {
         family: f"fewer than {MINIMUM_FAMILY_SUPPORT} positive events"
         for family in ANOMALY_FAMILIES
@@ -275,6 +280,23 @@ def resolve_labels(
 
     positives = int(frame["is_anomaly"].sum() or 0)
     rate = (positives / frame.height) if frame.height else None
+
+    # Both protocols' prevalence, recorded even when only one is selected, so a
+    # single call site can report the comparison without a second join.
+    prevalence = {
+        str(protocol): {
+            "positives": int(frame[column].sum() or 0),
+            "rate": (
+                round(int(frame[column].sum() or 0) / frame.height, 8)
+                if frame.height
+                else None
+            ),
+        }
+        for protocol, column in (
+            (LabelScope.EVENT_ONLY, "is_anomaly_event_only"),
+            (LabelScope.ALL_FAMILIES, "is_anomaly_all_families"),
+        )
+    }
 
     # --- observability audit ----------------------------------------------
     # The generator holds ~1.69M latent events but emits only a fraction to
@@ -329,8 +351,63 @@ def resolve_labels(
         period_counts=period_counts,
         observability=observability,
         family_coverage=family_coverage,
+        prevalence=prevalence,
         scope=scope,
     )
+
+
+def resolve_both(
+    events: pl.DataFrame,
+    *,
+    truth_root: str | Any,
+    period_column: str = "period",
+) -> tuple[LabelResolution, LabelResolution]:
+    """Return ``(EVENT_ONLY, ALL_FAMILIES)`` from a single resolution pass.
+
+    This is the entry point the dual-protocol comparison must use. The
+    expensive upstream work -- reading truth, recovering latent ids, the
+    entity-key vote, and all three label attachment paths -- is
+    protocol-independent and runs exactly once; only the final
+    ``is_anomaly`` binding is repeated.
+
+    Callers that invoke :func:`resolve_labels` twice for the two protocols
+    would recompute all of that, which is the redundancy this function exists
+    to prevent.
+    """
+    shared = resolve_labels(
+        events,
+        truth_root=truth_root,
+        period_column=period_column,
+        scope=LabelScope.EVENT_ONLY,
+    )
+    event_only = shared
+    # `event_only.events` still carries *both* protocol columns plus the
+    # EVENT_ONLY binding, so the ALL_FAMILIES frame is one rebind away -- no
+    # second truth read, no second entity-key vote, no second label attach.
+    all_frame = _select_protocol(
+        event_only.events.drop("is_anomaly", "label_protocol", strict=False),
+        LabelScope.ALL_FAMILIES,
+    )
+    all_res = LabelResolution(
+        events=all_frame,
+        dataset_version=shared.dataset_version,
+        labels_read=shared.labels_read,
+        injected_read=shared.injected_read,
+        matched_labels=shared.matched_labels,
+        family_counts=_family_counts(all_frame),
+        positives=int(all_frame["is_anomaly"].sum() or 0),
+        rate=(int(all_frame["is_anomaly"].sum() or 0) / all_frame.height)
+        if all_frame.height
+        else None,
+        skipped_families=shared.skipped_families,
+        unmatched_target_kinds=shared.unmatched_target_kinds,
+        period_counts=_period_counts(all_frame, period_column),
+        observability=shared.observability,
+        family_coverage=shared.family_coverage,
+        prevalence=shared.prevalence,
+        scope=LabelScope.ALL_FAMILIES,
+    )
+    return event_only, all_res
 
 
 def _attach_event_labels(frame: pl.DataFrame, injected: pl.DataFrame) -> pl.DataFrame:
@@ -553,12 +630,26 @@ def _attach_window_labels(
     return frame.join(agg, on="event_id", how="left")
 
 
-def _finalize(frame: pl.DataFrame, scope: LabelScope) -> pl.DataFrame:
-    """Union the three resolution paths into the four public columns.
+def _finalize(frame: pl.DataFrame) -> pl.DataFrame:
+    """Union the three resolution paths into the public columns.
 
     ``.flatten()`` is applied *outside* ``with_columns`` on purpose: inside it,
     flatten operates on the column as a whole and produces a result whose
     length is the total number of elements, not the row count.
+
+    Both label protocols are emitted here, in one pass, so the dual-protocol
+    comparison never re-runs generation, cleaning, entity resolution or feature
+    fitting:
+
+    ``is_anomaly_event_only``
+        True only where a single injected event was labelled.
+    ``is_anomaly_all_families``
+        True where any family covers the row.
+    ``label_protocol``
+        The protocol selected by :func:`resolve_labels`.
+
+    Keeping both columns rather than recomputing per protocol is what makes the
+    "only the label/evaluation layer differs" requirement true.
     """
     def _empty_list(name: str) -> pl.Expr:
         return pl.col(name).fill_null(pl.lit([], dtype=pl.List(pl.Utf8)))
@@ -583,25 +674,44 @@ def _finalize(frame: pl.DataFrame, scope: LabelScope) -> pl.DataFrame:
             pl.col("_sev_ev"), pl.col("_sev_ent"), pl.col("_sev_win")
         ).alias("anomaly_severity")
     )
-    # The row-level positive is defined by `scope`. Under EVENT_ONLY a row
-    # covered only by a collective burst or a distribution window is NOT a
-    # positive, even though `anomaly_family` records the coverage -- otherwise
-    # "anomaly" would mean "belonged to an entity that was ever flagged".
-    if scope is LabelScope.ALL_FAMILIES:
-        positive = pl.col("anomaly_ids").list.len() > 0
-    else:
-        positive = (
+    out = out.with_columns(
+        # Under EVENT_ONLY a row covered only by a collective burst or a
+        # distribution window is NOT a positive, even though
+        # `anomaly_family` records the coverage -- otherwise "anomaly" would
+        # mean "belonged to an entity that was ever flagged".
+        (
             pl.col("anomaly_family")
             .list.eval(pl.element().is_in(sorted(EVENT_FAMILIES)))
             .list.any()
-        )
-    out = out.with_columns(positive.alias("is_anomaly"))
+        ).alias("is_anomaly_event_only"),
+        (pl.col("anomaly_ids").list.len() > 0).alias("is_anomaly_all_families"),
+    )
     return out.drop(
         "_ids_ev", "_fam_ev", "_sev_ev",
         "_ids_ent", "_fam_ent", "_sev_ent",
         "_ids_win", "_fam_win", "_sev_win",
         "_source_filter",
         strict=False,
+    )
+
+
+def _select_protocol(frame: pl.DataFrame, scope: LabelScope) -> pl.DataFrame:
+    """Bind one protocol's column to ``is_anomaly`` and stamp ``label_protocol``.
+
+    ``is_anomaly`` is a *view* over the two protocol columns, never a third
+    independent truth: a detector that reads it cannot tell which protocol it
+    is being scored under unless the artifact records ``label_protocol``.
+    """
+    column = (
+        "is_anomaly_event_only"
+        if scope is LabelScope.EVENT_ONLY
+        else "is_anomaly_all_families"
+    )
+    if column not in frame.columns:  # pragma: no cover - defensive
+        raise ValueError(f"label column {column!r} missing; resolve_labels did not run")
+    return frame.with_columns(
+        pl.col(column).alias("is_anomaly"),
+        pl.lit(str(scope), dtype=pl.Utf8).alias("label_protocol"),
     )
 
 

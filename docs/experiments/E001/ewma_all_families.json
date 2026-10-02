@@ -1,0 +1,672 @@
+{
+ "experiment_id": "E001",
+ "model": {
+  "model_id": "mdl_d3408fdaf62656e4",
+  "model_type": "stat_ewma",
+  "label_protocol": "all_families",
+  "feature_set_id": "fs_b723dcd6c6bc",
+  "dataset_version": "world_a:1.0.0",
+  "feature_set_version": "feature_set_v1",
+  "training_period": "train",
+  "training_rows": 251802,
+  "training_start": "2021-01-03 21:54:10",
+  "training_end": "2021-03-05 12:54:54",
+  "validation_period": "validation",
+  "random_seed": 0,
+  "hyperparameters": {
+   "alpha": 0.1
+  },
+  "deterministic": true,
+  "fitted_features": [
+   "event_value"
+  ],
+  "n_parameters": null,
+  "fit_seconds": 0.02247699999861652,
+  "code_version": "994e701f2bd1"
+ },
+ "detector": "ewma",
+ "feature_columns": [
+  "event_value"
+ ],
+ "label_protocol": "all_families",
+ "threshold_selection": {
+  "method": "f1_max",
+  "threshold": 0.0,
+  "validation_period": "validation",
+  "feasible": true,
+  "reason": "",
+  "achieved": {
+   "precision": 0.18886582167832167,
+   "recall": 1.0,
+   "f1": 0.31772436928449976,
+   "fpr": 1.0
+  },
+  "candidates_considered": 513
+ },
+ "periods": {
+  "validation": {
+   "period": "validation",
+   "label_protocol": "all_families",
+   "n_rows": 73216,
+   "support_positive": 13828,
+   "support_negative": 59388,
+   "threshold": 0.0,
+   "n_predicted_positive": 73216,
+   "confusion": {
+    "tp": 13828,
+    "fp": 59388,
+    "fn": 0,
+    "tn": 0
+   },
+   "not_applicable": [],
+   "pr_auc": 0.1901689894258697,
+   "roc_auc": 0.49237784107276145,
+   "precision": {
+    "point": 0.18886582167832167,
+    "ci95_low": 0.1860470742792152,
+    "ci95_high": 0.1917172162154148,
+    "ci_method": "wilson"
+   },
+   "recall": {
+    "point": 1.0,
+    "ci95_low": 0.9997222742299259,
+    "ci95_high": 1.0,
+    "ci_method": "wilson"
+   },
+   "f1": {
+    "point": 0.3177243692844998,
+    "ci95_low": 0.0,
+    "ci95_high": 1.0,
+    "ci_method": "none"
+   },
+   "false_positive_rate": {
+    "point": 1.0,
+    "ci95_low": 0.9999353200923504,
+    "ci95_high": 1.0,
+    "ci_method": "wilson"
+   },
+   "inference_seconds": 0.013,
+   "family_metrics": {
+    "point": {
+     "family": "point",
+     "label_protocol": "all_families",
+     "period": "validation",
+     "coverage": 14,
+     "support": 1,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 1 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "contextual": {
+     "family": "contextual",
+     "label_protocol": "all_families",
+     "period": "validation",
+     "coverage": 44,
+     "support": 4,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 4 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "collective": {
+     "family": "collective",
+     "label_protocol": "all_families",
+     "period": "validation",
+     "coverage": 123,
+     "support": 9,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 9 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "temporal": {
+     "family": "temporal",
+     "label_protocol": "all_families",
+     "period": "validation",
+     "coverage": 5082,
+     "support": 1065,
+     "status": "OK",
+     "confusion": {
+      "tp": 1065,
+      "fp": 0,
+      "fn": 0,
+      "tn": 72151
+     },
+     "precision": "Interval(point=1.0, low=0.9964059601272087, high=1.0, method='wilson')",
+     "recall": "Interval(point=1.0, low=0.9964059601272087, high=1.0, method='wilson')",
+     "f1": "Interval(point=1.0, low=0.9981997449694235, high=0.9999999999999998, method='wilson')",
+     "false_positive_rate": "Interval(point=0.0, low=0.0, high=5.3239100010863086e-05, method='wilson')",
+     "confidence_intervals": {
+      "precision": {
+       "point": 1.0,
+       "ci95_low": 0.9964059601272087,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      },
+      "recall": {
+       "point": 1.0,
+       "ci95_low": 0.9964059601272087,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      }
+     }
+    },
+    "behavioral": {
+     "family": "behavioral",
+     "label_protocol": "all_families",
+     "period": "validation",
+     "coverage": 7,
+     "support": 2,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 2 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "relational": {
+     "family": "relational",
+     "label_protocol": "all_families",
+     "period": "validation",
+     "coverage": 55,
+     "support": 5,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 5 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "cross_source": {
+     "family": "cross_source",
+     "label_protocol": "all_families",
+     "period": "validation",
+     "coverage": 43,
+     "support": 12,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 12 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "distribution": {
+     "family": "distribution",
+     "label_protocol": "all_families",
+     "period": "validation",
+     "coverage": 12712,
+     "support": 12712,
+     "status": "OK",
+     "confusion": {
+      "tp": 12712,
+      "fp": 0,
+      "fn": 0,
+      "tn": 60504
+     },
+     "precision": "Interval(point=1.0, low=0.9996978997549526, high=1.0, method='wilson')",
+     "recall": "Interval(point=1.0, low=0.9996978997549526, high=1.0, method='wilson')",
+     "f1": "Interval(point=1.0, low=0.9998489270578899, high=1.0, method='wilson')",
+     "false_positive_rate": "Interval(point=0.0, low=0.0, high=6.348695851773978e-05, method='wilson')",
+     "confidence_intervals": {
+      "precision": {
+       "point": 1.0,
+       "ci95_low": 0.9996978997549526,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      },
+      "recall": {
+       "point": 1.0,
+       "ci95_low": 0.9996978997549526,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      }
+     }
+    },
+    "missingness": {
+     "family": "missingness",
+     "label_protocol": "all_families",
+     "period": "validation",
+     "coverage": 29,
+     "support": 29,
+     "status": "OK",
+     "confusion": {
+      "tp": 29,
+      "fp": 0,
+      "fn": 0,
+      "tn": 73187
+     },
+     "precision": "Interval(point=1.0, low=0.8830302015002593, high=1.0, method='wilson')",
+     "recall": "Interval(point=1.0, low=0.8830302015002593, high=1.0, method='wilson')",
+     "f1": "Interval(point=1.0, low=0.9378821442127971, high=1.0, method='wilson')",
+     "false_positive_rate": "Interval(point=0.0, low=3.3881317890172014e-21, high=5.2485512451109646e-05, method='wilson')",
+     "confidence_intervals": {
+      "precision": {
+       "point": 1.0,
+       "ci95_low": 0.8830302015002593,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      },
+      "recall": {
+       "point": 1.0,
+       "ci95_low": 0.8830302015002593,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      }
+     }
+    }
+   }
+  },
+  "backtest": {
+   "period": "backtest",
+   "label_protocol": "all_families",
+   "n_rows": 101302,
+   "support_positive": 1582,
+   "support_negative": 99720,
+   "threshold": 0.0,
+   "n_predicted_positive": 101302,
+   "confusion": {
+    "tp": 1582,
+    "fp": 99720,
+    "fn": 0,
+    "tn": 0
+   },
+   "not_applicable": [],
+   "pr_auc": 0.014729567094096327,
+   "roc_auc": 0.47429221225246115,
+   "precision": {
+    "point": 0.015616670944305147,
+    "ci95_low": 0.014871320810656723,
+    "ci95_high": 0.01639875614841354,
+    "ci_method": "wilson"
+   },
+   "recall": {
+    "point": 1.0,
+    "ci95_low": 0.9975776526718182,
+    "ci95_high": 0.9999999999999999,
+    "ci_method": "wilson"
+   },
+   "f1": {
+    "point": 0.030753081139924577,
+    "ci95_low": 0.0,
+    "ci95_high": 1.0,
+    "ci_method": "none"
+   },
+   "false_positive_rate": {
+    "point": 1.0,
+    "ci95_low": 0.9999614790328522,
+    "ci95_high": 1.0,
+    "ci_method": "wilson"
+   },
+   "inference_seconds": 0.017,
+   "family_metrics": {
+    "point": {
+     "family": "point",
+     "label_protocol": "all_families",
+     "period": "backtest",
+     "coverage": 14,
+     "support": 4,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 4 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "contextual": {
+     "family": "contextual",
+     "label_protocol": "all_families",
+     "period": "backtest",
+     "coverage": 44,
+     "support": 10,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 10 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "collective": {
+     "family": "collective",
+     "label_protocol": "all_families",
+     "period": "backtest",
+     "coverage": 123,
+     "support": 26,
+     "status": "OK",
+     "confusion": {
+      "tp": 26,
+      "fp": 0,
+      "fn": 0,
+      "tn": 101276
+     },
+     "precision": "Interval(point=1.0, low=0.8712710781407846, high=1.0, method='wilson')",
+     "recall": "Interval(point=1.0, low=0.8712710781407846, high=1.0, method='wilson')",
+     "f1": "Interval(point=1.0, low=0.9312077638761376, high=1.0, method='wilson')",
+     "false_positive_rate": "Interval(point=0.0, low=0.0, high=3.7929155154296145e-05, method='wilson')",
+     "confidence_intervals": {
+      "precision": {
+       "point": 1.0,
+       "ci95_low": 0.8712710781407846,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      },
+      "recall": {
+       "point": 1.0,
+       "ci95_low": 0.8712710781407846,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      }
+     }
+    },
+    "temporal": {
+     "family": "temporal",
+     "label_protocol": "all_families",
+     "period": "backtest",
+     "coverage": 5082,
+     "support": 1514,
+     "status": "OK",
+     "confusion": {
+      "tp": 1514,
+      "fp": 0,
+      "fn": 0,
+      "tn": 99788
+     },
+     "precision": "Interval(point=1.0, low=0.9974691303901537, high=1.0, method='wilson')",
+     "recall": "Interval(point=1.0, low=0.9974691303901537, high=1.0, method='wilson')",
+     "f1": "Interval(point=1.0, low=0.9987329618408911, high=1.0, method='wilson')",
+     "false_positive_rate": "Interval(point=0.0, low=0.0, high=3.849471825088338e-05, method='wilson')",
+     "confidence_intervals": {
+      "precision": {
+       "point": 1.0,
+       "ci95_low": 0.9974691303901537,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      },
+      "recall": {
+       "point": 1.0,
+       "ci95_low": 0.9974691303901537,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      }
+     }
+    },
+    "behavioral": {
+     "family": "behavioral",
+     "label_protocol": "all_families",
+     "period": "backtest",
+     "coverage": 7,
+     "support": 3,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 3 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "relational": {
+     "family": "relational",
+     "label_protocol": "all_families",
+     "period": "backtest",
+     "coverage": 55,
+     "support": 14,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 14 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "cross_source": {
+     "family": "cross_source",
+     "label_protocol": "all_families",
+     "period": "backtest",
+     "coverage": 43,
+     "support": 11,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 11 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "distribution": {
+     "family": "distribution",
+     "label_protocol": "all_families",
+     "period": "backtest",
+     "coverage": 12712,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "missingness": {
+     "family": "missingness",
+     "label_protocol": "all_families",
+     "period": "backtest",
+     "coverage": 29,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    }
+   }
+  },
+  "forward": {
+   "period": "forward",
+   "label_protocol": "all_families",
+   "n_rows": 71674,
+   "support_positive": 891,
+   "support_negative": 70783,
+   "threshold": 0.0,
+   "n_predicted_positive": 71674,
+   "confusion": {
+    "tp": 891,
+    "fp": 70783,
+    "fn": 0,
+    "tn": 0
+   },
+   "not_applicable": [],
+   "pr_auc": 0.01404775424826968,
+   "roc_auc": 0.5316337203796057,
+   "precision": {
+    "point": 0.012431286100957112,
+    "ci95_low": 0.011645852971678129,
+    "ci95_high": 0.013268980154911906,
+    "ci_method": "wilson"
+   },
+   "recall": {
+    "point": 1.0,
+    "ci95_low": 0.9957071067921274,
+    "ci95_high": 0.9999999999999999,
+    "ci_method": "wilson"
+   },
+   "f1": {
+    "point": 0.024557293461034933,
+    "ci95_low": 0.0,
+    "ci95_high": 1.0,
+    "ci_method": "none"
+   },
+   "false_positive_rate": {
+    "point": 1.0,
+    "ci95_low": 0.9999457320210716,
+    "ci95_high": 1.0,
+    "ci_method": "wilson"
+   },
+   "inference_seconds": 0.012,
+   "family_metrics": {
+    "point": {
+     "family": "point",
+     "label_protocol": "all_families",
+     "period": "forward",
+     "coverage": 14,
+     "support": 1,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 1 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "contextual": {
+     "family": "contextual",
+     "label_protocol": "all_families",
+     "period": "forward",
+     "coverage": 44,
+     "support": 10,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 10 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "collective": {
+     "family": "collective",
+     "label_protocol": "all_families",
+     "period": "forward",
+     "coverage": 123,
+     "support": 6,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 6 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "temporal": {
+     "family": "temporal",
+     "label_protocol": "all_families",
+     "period": "forward",
+     "coverage": 5082,
+     "support": 864,
+     "status": "OK",
+     "confusion": {
+      "tp": 864,
+      "fp": 0,
+      "fn": 0,
+      "tn": 70810
+     },
+     "precision": "Interval(point=1.0, low=0.9955735477008505, high=1.0, method='wilson')",
+     "recall": "Interval(point=1.0, low=0.9955735477008505, high=1.0, method='wilson')",
+     "f1": "Interval(point=1.0, low=0.9977818646151884, high=1.0, method='wilson')",
+     "false_positive_rate": "Interval(point=0.0, low=3.3881317890172014e-21, high=5.424728755787089e-05, method='wilson')",
+     "confidence_intervals": {
+      "precision": {
+       "point": 1.0,
+       "ci95_low": 0.9955735477008505,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      },
+      "recall": {
+       "point": 1.0,
+       "ci95_low": 0.9955735477008505,
+       "ci95_high": 1.0,
+       "ci_method": "wilson"
+      }
+     }
+    },
+    "behavioral": {
+     "family": "behavioral",
+     "label_protocol": "all_families",
+     "period": "forward",
+     "coverage": 7,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "relational": {
+     "family": "relational",
+     "label_protocol": "all_families",
+     "period": "forward",
+     "coverage": 55,
+     "support": 8,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 8 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "cross_source": {
+     "family": "cross_source",
+     "label_protocol": "all_families",
+     "period": "forward",
+     "coverage": 43,
+     "support": 2,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 2 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "distribution": {
+     "family": "distribution",
+     "label_protocol": "all_families",
+     "period": "forward",
+     "coverage": 12712,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "missingness": {
+     "family": "missingness",
+     "label_protocol": "all_families",
+     "period": "forward",
+     "coverage": 29,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    }
+   }
+  }
+ },
+ "frozen_threshold": 0.0,
+ "dataset_version": "world_a:1.0.0",
+ "feature_set_id": "fs_b723dcd6c6bc"
+}

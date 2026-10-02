@@ -1,0 +1,564 @@
+{
+ "experiment_id": "E001",
+ "model": {
+  "model_id": "mdl_9a625fa325b0eea5",
+  "model_type": "stat_changepoint",
+  "label_protocol": "event_only",
+  "feature_set_id": "fs_b723dcd6c6bc",
+  "dataset_version": "world_a:1.0.0",
+  "feature_set_version": "feature_set_v1",
+  "training_period": "train",
+  "training_rows": 251802,
+  "training_start": "2021-01-03 21:54:10",
+  "training_end": "2021-03-05 12:54:54",
+  "validation_period": "validation",
+  "random_seed": 0,
+  "hyperparameters": {
+   "drift": 0.5
+  },
+  "deterministic": true,
+  "fitted_features": [
+   "rate_24h"
+  ],
+  "n_parameters": null,
+  "fit_seconds": 0.0037163000015425496,
+  "code_version": "994e701f2bd1"
+ },
+ "detector": "changepoint",
+ "feature_columns": [
+  "rate_24h"
+ ],
+ "label_protocol": "event_only",
+ "threshold_selection": {
+  "method": "f1_max",
+  "threshold": 952.3917777015658,
+  "validation_period": "validation",
+  "feasible": true,
+  "reason": "",
+  "achieved": {
+   "precision": 0.000418196180474885,
+   "recall": 0.375,
+   "f1": 0.0008354606637270828,
+   "fpr": 0.293911902940212
+  },
+  "candidates_considered": 513
+ },
+ "periods": {
+  "validation": {
+   "period": "validation",
+   "label_protocol": "event_only",
+   "n_rows": 73216,
+   "support_positive": 24,
+   "support_negative": 73192,
+   "threshold": 952.3917777015658,
+   "n_predicted_positive": 21521,
+   "confusion": {
+    "tp": 9,
+    "fp": 21512,
+    "fn": 15,
+    "tn": 51680
+   },
+   "not_applicable": [],
+   "pr_auc": 0.00034210383826990305,
+   "roc_auc": 0.5036590406055307,
+   "precision": {
+    "point": 0.000418196180474885,
+    "ci95_low": 0.00022003613737560482,
+    "ci95_high": 0.0007946732560700637,
+    "ci_method": "wilson"
+   },
+   "recall": {
+    "point": 0.375,
+    "ci95_low": 0.21159367559548778,
+    "ci95_high": 0.5729003755732572,
+    "ci_method": "wilson"
+   },
+   "f1": {
+    "point": 0.0008354606637270828,
+    "ci95_low": 0.0,
+    "ci95_high": 1.0,
+    "ci_method": "none"
+   },
+   "false_positive_rate": {
+    "point": 0.293911902940212,
+    "ci95_low": 0.29062248090620446,
+    "ci95_high": 0.29722295677522104,
+    "ci_method": "wilson"
+   },
+   "inference_seconds": 0.03,
+   "family_metrics": {
+    "point": {
+     "family": "point",
+     "label_protocol": "event_only",
+     "period": "validation",
+     "coverage": 14,
+     "support": 1,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 1 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "contextual": {
+     "family": "contextual",
+     "label_protocol": "event_only",
+     "period": "validation",
+     "coverage": 44,
+     "support": 4,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 4 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "collective": {
+     "family": "collective",
+     "label_protocol": "event_only",
+     "period": "validation",
+     "coverage": 123,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "temporal": {
+     "family": "temporal",
+     "label_protocol": "event_only",
+     "period": "validation",
+     "coverage": 5082,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "behavioral": {
+     "family": "behavioral",
+     "label_protocol": "event_only",
+     "period": "validation",
+     "coverage": 7,
+     "support": 2,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 2 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "relational": {
+     "family": "relational",
+     "label_protocol": "event_only",
+     "period": "validation",
+     "coverage": 55,
+     "support": 5,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 5 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "cross_source": {
+     "family": "cross_source",
+     "label_protocol": "event_only",
+     "period": "validation",
+     "coverage": 43,
+     "support": 12,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 12 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "distribution": {
+     "family": "distribution",
+     "label_protocol": "event_only",
+     "period": "validation",
+     "coverage": 12712,
+     "support": 3,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 3 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "missingness": {
+     "family": "missingness",
+     "label_protocol": "event_only",
+     "period": "validation",
+     "coverage": 29,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    }
+   }
+  },
+  "backtest": {
+   "period": "backtest",
+   "label_protocol": "event_only",
+   "n_rows": 101302,
+   "support_positive": 42,
+   "support_negative": 101260,
+   "threshold": 952.3917777015658,
+   "n_predicted_positive": 44807,
+   "confusion": {
+    "tp": 17,
+    "fp": 44790,
+    "fn": 25,
+    "tn": 56470
+   },
+   "not_applicable": [],
+   "pr_auc": 0.0003981760194626226,
+   "roc_auc": 0.47384338289927863,
+   "precision": {
+    "point": 0.00037940500368246035,
+    "ci95_low": 0.00023690602271125163,
+    "ci95_high": 0.0006075650380580237,
+    "ci_method": "wilson"
+   },
+   "recall": {
+    "point": 0.40476190476190477,
+    "ci95_low": 0.27042861147481323,
+    "ci95_high": 0.5550568724996064,
+    "ci_method": "wilson"
+   },
+   "f1": {
+    "point": 0.0007580994002095922,
+    "ci95_low": 0.0,
+    "ci95_high": 1.0,
+    "ci_method": "none"
+   },
+   "false_positive_rate": {
+    "point": 0.4423266837843176,
+    "ci95_low": 0.4392698503022877,
+    "ci95_high": 0.44538789295792913,
+    "ci_method": "wilson"
+   },
+   "inference_seconds": 0.044,
+   "family_metrics": {
+    "point": {
+     "family": "point",
+     "label_protocol": "event_only",
+     "period": "backtest",
+     "coverage": 14,
+     "support": 4,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 4 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "contextual": {
+     "family": "contextual",
+     "label_protocol": "event_only",
+     "period": "backtest",
+     "coverage": 44,
+     "support": 10,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 10 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "collective": {
+     "family": "collective",
+     "label_protocol": "event_only",
+     "period": "backtest",
+     "coverage": 123,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "temporal": {
+     "family": "temporal",
+     "label_protocol": "event_only",
+     "period": "backtest",
+     "coverage": 5082,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "behavioral": {
+     "family": "behavioral",
+     "label_protocol": "event_only",
+     "period": "backtest",
+     "coverage": 7,
+     "support": 3,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 3 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "relational": {
+     "family": "relational",
+     "label_protocol": "event_only",
+     "period": "backtest",
+     "coverage": 55,
+     "support": 14,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 14 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "cross_source": {
+     "family": "cross_source",
+     "label_protocol": "event_only",
+     "period": "backtest",
+     "coverage": 43,
+     "support": 11,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 11 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "distribution": {
+     "family": "distribution",
+     "label_protocol": "event_only",
+     "period": "backtest",
+     "coverage": 12712,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "missingness": {
+     "family": "missingness",
+     "label_protocol": "event_only",
+     "period": "backtest",
+     "coverage": 29,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    }
+   }
+  },
+  "forward": {
+   "period": "forward",
+   "label_protocol": "event_only",
+   "n_rows": 71674,
+   "support_positive": 21,
+   "support_negative": 71653,
+   "threshold": 952.3917777015658,
+   "n_predicted_positive": 22285,
+   "confusion": {
+    "tp": 5,
+    "fp": 22280,
+    "fn": 16,
+    "tn": 49373
+   },
+   "not_applicable": [],
+   "pr_auc": 0.00031017759901362247,
+   "roc_auc": 0.46555788379578034,
+   "precision": {
+    "point": 0.0002243661655822302,
+    "ci95_low": 9.583950202499169e-05,
+    "ci95_high": 0.0005251644584664784,
+    "ci_method": "wilson"
+   },
+   "recall": {
+    "point": 0.23809523809523808,
+    "ci95_low": 0.10628013022636468,
+    "ci95_high": 0.4509117368295075,
+    "ci_method": "wilson"
+   },
+   "f1": {
+    "point": 0.0004483098717833767,
+    "ci95_low": 0.0,
+    "ci95_high": 1.0,
+    "ci_method": "none"
+   },
+   "false_positive_rate": {
+    "point": 0.3109430170404589,
+    "ci95_low": 0.30756401481859486,
+    "ci95_high": 0.314342289611951,
+    "ci_method": "wilson"
+   },
+   "inference_seconds": 0.03,
+   "family_metrics": {
+    "point": {
+     "family": "point",
+     "label_protocol": "event_only",
+     "period": "forward",
+     "coverage": 14,
+     "support": 1,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 1 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "contextual": {
+     "family": "contextual",
+     "label_protocol": "event_only",
+     "period": "forward",
+     "coverage": 44,
+     "support": 10,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 10 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "collective": {
+     "family": "collective",
+     "label_protocol": "event_only",
+     "period": "forward",
+     "coverage": 123,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "temporal": {
+     "family": "temporal",
+     "label_protocol": "event_only",
+     "period": "forward",
+     "coverage": 5082,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "behavioral": {
+     "family": "behavioral",
+     "label_protocol": "event_only",
+     "period": "forward",
+     "coverage": 7,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "relational": {
+     "family": "relational",
+     "label_protocol": "event_only",
+     "period": "forward",
+     "coverage": 55,
+     "support": 8,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 8 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "cross_source": {
+     "family": "cross_source",
+     "label_protocol": "event_only",
+     "period": "forward",
+     "coverage": 43,
+     "support": 2,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 2 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "distribution": {
+     "family": "distribution",
+     "label_protocol": "event_only",
+     "period": "forward",
+     "coverage": 12712,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    },
+    "missingness": {
+     "family": "missingness",
+     "label_protocol": "event_only",
+     "period": "forward",
+     "coverage": 29,
+     "support": 0,
+     "status": "NOT_APPLICABLE",
+     "reason": "support 0 < minimum 20",
+     "precision": null,
+     "recall": null,
+     "f1": null,
+     "false_positive_rate": null,
+     "confidence_intervals": {}
+    }
+   }
+  }
+ },
+ "frozen_threshold": 952.3917777015658,
+ "dataset_version": "world_a:1.0.0",
+ "feature_set_id": "fs_b723dcd6c6bc"
+}

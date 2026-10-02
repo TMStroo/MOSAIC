@@ -1,0 +1,91 @@
+{
+ "experiment_id": "E001",
+ "description": "statistical baselines, dual label protocol",
+ "dataset_version": "world_a:1.0.0",
+ "feature_set_id": "fs_b723dcd6c6bc",
+ "feature_set_version": "feature_set_v1",
+ "feature_names": [
+  "count_1h",
+  "rate_1h",
+  "count_6h",
+  "rate_6h",
+  "count_24h",
+  "rate_24h",
+  "count_168h",
+  "rate_168h",
+  "entity_events_so_far",
+  "mean_value_24h",
+  "std_value_24h",
+  "mean_value_7d",
+  "std_value_7d",
+  "ewma_value",
+  "ewma_abs_residual",
+  "hour_of_day",
+  "day_of_week",
+  "day_of_year",
+  "seconds_since_prev",
+  "log_gap_since_prev",
+  "is_rapid_succession",
+  "gap_vs_expected",
+  "rate_24h_vs_baseline",
+  "value_robust_z",
+  "value_iqr_ratio",
+  "value_above_3iqr",
+  "rate_vs_base",
+  "rate_abs_deviation",
+  "source_share_train",
+  "source_unseen_in_train",
+  "value_missing",
+  "location_missing",
+  "record_confidence",
+  "transition_probability",
+  "transition_unseen",
+  "sources_in_hour",
+  "sources_for_entity",
+  "event_type_share_train",
+  "event_type_unseen_in_train"
+ ],
+ "split_counts": {
+  "train": 251802,
+  "validation": 73216,
+  "backtest": 101302,
+  "forward": 71674
+ },
+ "fit_state_seconds": 0.128,
+ "compute_features_seconds": 1.346,
+ "threshold_method": "f1_max",
+ "label_protocols": [
+  "event_only",
+  "all_families"
+ ],
+ "prevalence": {
+  "event_only": {
+   "positives": 163,
+   "rate": 0.00032731
+  },
+  "all_families": {
+   "positives": 18098,
+   "rate": 0.0363418
+  }
+ },
+ "observability": {
+  "latent_events_total": 1689152,
+  "latent_events_observable": 488306,
+  "event_labels": 709,
+  "event_labels_observable": 161,
+  "event_label_coverage": 0.22708,
+  "note": "anomalies whose target never reached an observable source cannot be detected; recall is computed only over observable labels"
+ },
+ "family_coverage": {
+  "point": 14,
+  "contextual": 44,
+  "collective": 123,
+  "temporal": 5082,
+  "behavioral": 7,
+  "relational": 55,
+  "cross_source": 43,
+  "distribution": 12712,
+  "missingness": 29
+ },
+ "note": "EVENT_ONLY is the primary protocol; ALL_FAMILIES is a sensitivity analysis with larger support but partially entity-membership scope"
+}
