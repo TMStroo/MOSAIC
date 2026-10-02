@@ -1,0 +1,411 @@
+{
+ "dataset_version": "world_a:1.0.0",
+ "description": "supervised ML baselines, dual label protocol, F0-F5",
+ "experiment_id": "E011",
+ "family_coverage": {
+  "behavioral": 7,
+  "collective": 123,
+  "contextual": 44,
+  "cross_source": 43,
+  "distribution": 12712,
+  "missingness": 29,
+  "point": 14,
+  "relational": 55,
+  "temporal": 5082
+ },
+ "feature_set_version": "feature_set_v1",
+ "feature_sets": {
+  "BEHAV": {
+   "columns": [
+    "value_robust_z",
+    "value_iqr_ratio",
+    "value_above_3iqr",
+    "rate_vs_base",
+    "rate_abs_deviation"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "behavioral"
+   ],
+   "id": "BEHAV_75ae9f3fa2",
+   "n_columns": 5,
+   "name": "BEHAV"
+  },
+  "CROSS": {
+   "columns": [
+    "sources_in_hour",
+    "sources_for_entity",
+    "event_type_share_train",
+    "event_type_unseen_in_train"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "cross_source"
+   ],
+   "id": "CROSS_46778df60f",
+   "n_columns": 4,
+   "name": "CROSS"
+  },
+  "F0": {
+   "columns": [
+    "count_1h",
+    "rate_1h",
+    "count_6h",
+    "rate_6h",
+    "count_24h",
+    "rate_24h",
+    "count_168h",
+    "rate_168h",
+    "entity_events_so_far"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "frequency"
+   ],
+   "id": "F0_e0e44e0080",
+   "n_columns": 9,
+   "name": "F0"
+  },
+  "F1": {
+   "columns": [
+    "count_1h",
+    "rate_1h",
+    "count_6h",
+    "rate_6h",
+    "count_24h",
+    "rate_24h",
+    "count_168h",
+    "rate_168h",
+    "entity_events_so_far",
+    "mean_value_24h",
+    "std_value_24h",
+    "mean_value_7d",
+    "std_value_7d",
+    "ewma_value",
+    "ewma_abs_residual"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "frequency",
+    "statistical"
+   ],
+   "id": "F1_187d81074e",
+   "n_columns": 15,
+   "name": "F1"
+  },
+  "F2": {
+   "columns": [
+    "count_1h",
+    "rate_1h",
+    "count_6h",
+    "rate_6h",
+    "count_24h",
+    "rate_24h",
+    "count_168h",
+    "rate_168h",
+    "entity_events_so_far",
+    "mean_value_24h",
+    "std_value_24h",
+    "mean_value_7d",
+    "std_value_7d",
+    "ewma_value",
+    "ewma_abs_residual",
+    "hour_of_day",
+    "day_of_week",
+    "day_of_year",
+    "seconds_since_prev",
+    "log_gap_since_prev",
+    "is_rapid_succession",
+    "gap_vs_expected",
+    "rate_24h_vs_baseline"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "frequency",
+    "statistical",
+    "temporal"
+   ],
+   "id": "F2_34376ae280",
+   "n_columns": 23,
+   "name": "F2"
+  },
+  "F3": {
+   "columns": [
+    "count_1h",
+    "rate_1h",
+    "count_6h",
+    "rate_6h",
+    "count_24h",
+    "rate_24h",
+    "count_168h",
+    "rate_168h",
+    "entity_events_so_far",
+    "mean_value_24h",
+    "std_value_24h",
+    "mean_value_7d",
+    "std_value_7d",
+    "ewma_value",
+    "ewma_abs_residual",
+    "hour_of_day",
+    "day_of_week",
+    "day_of_year",
+    "seconds_since_prev",
+    "log_gap_since_prev",
+    "is_rapid_succession",
+    "gap_vs_expected",
+    "rate_24h_vs_baseline",
+    "value_robust_z",
+    "value_iqr_ratio",
+    "value_above_3iqr",
+    "rate_vs_base",
+    "rate_abs_deviation"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "frequency",
+    "statistical",
+    "temporal",
+    "behavioral"
+   ],
+   "id": "F3_9f9141c5a3",
+   "n_columns": 28,
+   "name": "F3"
+  },
+  "F4": {
+   "columns": [
+    "count_1h",
+    "rate_1h",
+    "count_6h",
+    "rate_6h",
+    "count_24h",
+    "rate_24h",
+    "count_168h",
+    "rate_168h",
+    "entity_events_so_far",
+    "mean_value_24h",
+    "std_value_24h",
+    "mean_value_7d",
+    "std_value_7d",
+    "ewma_value",
+    "ewma_abs_residual",
+    "hour_of_day",
+    "day_of_week",
+    "day_of_year",
+    "seconds_since_prev",
+    "log_gap_since_prev",
+    "is_rapid_succession",
+    "gap_vs_expected",
+    "rate_24h_vs_baseline",
+    "value_robust_z",
+    "value_iqr_ratio",
+    "value_above_3iqr",
+    "rate_vs_base",
+    "rate_abs_deviation",
+    "sources_in_hour",
+    "sources_for_entity",
+    "event_type_share_train",
+    "event_type_unseen_in_train"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "frequency",
+    "statistical",
+    "temporal",
+    "behavioral",
+    "cross_source"
+   ],
+   "id": "F4_74cf414f05",
+   "n_columns": 32,
+   "name": "F4"
+  },
+  "F5": {
+   "columns": [
+    "count_1h",
+    "rate_1h",
+    "count_6h",
+    "rate_6h",
+    "count_24h",
+    "rate_24h",
+    "count_168h",
+    "rate_168h",
+    "entity_events_so_far",
+    "mean_value_24h",
+    "std_value_24h",
+    "mean_value_7d",
+    "std_value_7d",
+    "ewma_value",
+    "ewma_abs_residual",
+    "hour_of_day",
+    "day_of_week",
+    "day_of_year",
+    "seconds_since_prev",
+    "log_gap_since_prev",
+    "is_rapid_succession",
+    "gap_vs_expected",
+    "rate_24h_vs_baseline",
+    "value_robust_z",
+    "value_iqr_ratio",
+    "value_above_3iqr",
+    "rate_vs_base",
+    "rate_abs_deviation",
+    "source_share_train",
+    "source_unseen_in_train",
+    "value_missing",
+    "location_missing",
+    "record_confidence",
+    "transition_probability",
+    "transition_unseen",
+    "sources_in_hour",
+    "sources_for_entity",
+    "event_type_share_train",
+    "event_type_unseen_in_train"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "frequency",
+    "statistical",
+    "temporal",
+    "behavioral",
+    "cross_source",
+    "data_quality",
+    "sequence"
+   ],
+   "id": "F5_3d4cbb6425",
+   "n_columns": 39,
+   "name": "F5"
+  },
+  "FREQ": {
+   "columns": [
+    "count_1h",
+    "rate_1h",
+    "count_6h",
+    "rate_6h",
+    "count_24h",
+    "rate_24h",
+    "count_168h",
+    "rate_168h",
+    "entity_events_so_far"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "frequency"
+   ],
+   "id": "FREQ_e0e44e0080",
+   "n_columns": 9,
+   "name": "FREQ"
+  },
+  "QUAL": {
+   "columns": [
+    "source_share_train",
+    "source_unseen_in_train",
+    "value_missing",
+    "location_missing",
+    "record_confidence"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "data_quality"
+   ],
+   "id": "QUAL_819d5758f6",
+   "n_columns": 5,
+   "name": "QUAL"
+  },
+  "SEQ": {
+   "columns": [
+    "transition_probability",
+    "transition_unseen"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "sequence"
+   ],
+   "id": "SEQ_cee200d25c",
+   "n_columns": 2,
+   "name": "SEQ"
+  },
+  "STAT": {
+   "columns": [
+    "mean_value_24h",
+    "std_value_24h",
+    "mean_value_7d",
+    "std_value_7d",
+    "ewma_value",
+    "ewma_abs_residual"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "statistical"
+   ],
+   "id": "STAT_465f83b571",
+   "n_columns": 6,
+   "name": "STAT"
+  },
+  "TEMP": {
+   "columns": [
+    "hour_of_day",
+    "day_of_week",
+    "day_of_year",
+    "seconds_since_prev",
+    "log_gap_since_prev",
+    "is_rapid_succession",
+    "gap_vs_expected",
+    "rate_24h_vs_baseline"
+   ],
+   "excludes_graph": true,
+   "families": [
+    "temporal"
+   ],
+   "id": "TEMP_c358239402",
+   "n_columns": 8,
+   "name": "TEMP"
+  }
+ },
+ "label_protocols": [
+  "event_only",
+  "all_families"
+ ],
+ "models": [
+  "dummy",
+  "logistic",
+  "decision_tree",
+  "random_forest",
+  "gradient_boosting"
+ ],
+ "n_feature_columns": 39,
+ "n_rows": 497994,
+ "observability": {
+  "event_label_coverage": 0.22708,
+  "event_labels": 709,
+  "event_labels_observable": 161,
+  "latent_events_observable": 488306,
+  "latent_events_total": 1689152,
+  "note": "anomalies whose target never reached an observable source cannot be detected; recall is computed only over observable labels"
+ },
+ "prevalence": {
+  "all_families": {
+   "positives": 18098,
+   "rate": 0.0363418
+  },
+  "event_only": {
+   "positives": 163,
+   "rate": 0.00032731
+  }
+ },
+ "registry_fingerprint": "a8ec17230965a4b7",
+ "seed": 0,
+ "split_counts": {
+  "backtest": 101302,
+  "forward": 71674,
+  "train": 251802,
+  "validation": 73216
+ },
+ "threshold_method": "f1_max",
+ "timings": {
+  "build_events": 0.03683379999711178,
+  "compute_features": 1.396890899995924,
+  "feature_artifact_key": "ce7d8adf6be8f8b7",
+  "feature_source": "recomputed",
+  "fit_state": 0.14336689999618102,
+  "resolve_labels": 2.3339263000088977
+ }
+}

@@ -20,6 +20,7 @@ from typing import Any
 import polars as pl
 
 from mosaic.detection.base import Detector
+from mosaic.experiments._polars_extremes import numeric_scalar
 from mosaic.experiments.protocol import Period
 
 #: Tukey's constant for the 1.5*IQR fence.
@@ -72,13 +73,15 @@ class ZScoreDetector(Detector):
         series = train[column].drop_nulls()
         if series.is_empty():
             raise ValueError(f"stat_zscore: feature {column!r} has no non-null training values")
-        self._mean = float(series.mean())
+        self._mean = numeric_scalar(series.mean(), what="the mean", source=series.dtype)
         # `std(ddof=1)` is None for a single observation and 0.0 for a constant
         # one. Both mean "no scale to normalise by", so both take the same
         # branch: score by raw deviation instead of dividing by a missing or
         # zero denominator.
         raw_sd = series.std(ddof=1)
-        sd = float(raw_sd) if raw_sd is not None else 0.0
+        sd = 0.0 if raw_sd is None else numeric_scalar(
+            raw_sd, what="the standard deviation", source=series.dtype
+        )
         # A constant feature has no spread to normalise by. Rather than divide by
         # zero, the score degenerates to "distance from the constant", which is
         # the correct limit and keeps the detector usable on e.g. a flag column.
@@ -125,8 +128,10 @@ class RobustZScoreDetector(Detector):
         series = train[column].drop_nulls()
         if series.is_empty():
             raise ValueError(f"stat_robust_z: feature {column!r} has no non-null training values")
-        self._median = float(series.median())
-        mad = float((series.abs() - self._median).median())
+        self._median = numeric_scalar(series.median(), what="the median", source=series.dtype)
+        mad = numeric_scalar(
+            (series.abs() - self._median).median(), what="the MAD", source=series.dtype
+        )
         self._scale = mad * 1.4826 if mad > 0 else None
 
     def _score_impl(self, data: pl.DataFrame) -> pl.Series:
@@ -178,8 +183,8 @@ class IQRFenceDetector(Detector):
         series = train[column].drop_nulls()
         if series.is_empty():
             raise ValueError(f"stat_iqr: feature {column!r} has no non-null training values")
-        self._q1 = float(series.quantile(0.25))
-        self._q3 = float(series.quantile(0.75))
+        self._q1 = numeric_scalar(series.quantile(0.25), what="the first quartile", source=series.dtype)
+        self._q3 = numeric_scalar(series.quantile(0.75), what="the third quartile", source=series.dtype)
         self._iqr = self._q3 - self._q1
         self._low = self._q1 - self.k * self._iqr
         self._high = self._q3 + self.k * self._iqr
@@ -245,7 +250,7 @@ class EWMAResidualDetector(Detector):
         # Carry the level through the whole training period rather than starting
         # at the mean, so the state handed to the next period reflects the
         # series' actual recent level.
-        level = float(series[0])
+        level = numeric_scalar(series[0], what="the initial EWMA level", source=series.dtype)
         # Direct Series iteration: `iter_rows` is a DataFrame method, and the
         # Series is already null-free here.
         for value in series:
@@ -316,13 +321,17 @@ class ChangePointDetector(Detector):
         series = train[column].drop_nulls()
         if series.is_empty():
             raise ValueError(f"stat_changepoint: feature {column!r} has no non-null training values")
-        self._centre = float(series.median())
-        mad = float((series.abs() - self._centre).median())
+        self._centre = numeric_scalar(series.median(), what="the median", source=series.dtype)
+        mad = numeric_scalar(
+            (series.abs() - self._centre).median(), what="the MAD", source=series.dtype
+        )
         scale = mad * 1.4826
         if scale <= 0:
             # Same None-for-one-observation case as the z-score detector.
             raw_std = series.std(ddof=1)
-            scale = float(raw_std) if raw_std is not None else 0.0
+            scale = 0.0 if raw_std is None else numeric_scalar(
+                raw_std, what="the standard deviation", source=series.dtype
+            )
         self._scale = scale
 
     def _score_impl(self, data: pl.DataFrame) -> pl.Series:

@@ -21,8 +21,8 @@
    "event_value"
   ],
   "n_parameters": null,
-  "fit_seconds": 0.0024212999996962026,
-  "code_version": "7df009ab574c"
+  "fit_seconds": 0.0024927999984356575,
+  "code_version": "c244542fda59"
  },
  "detector": "iqr",
  "feature_columns": [

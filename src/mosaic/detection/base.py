@@ -37,6 +37,7 @@ from typing import Any
 
 import polars as pl
 
+from mosaic.experiments._polars_extremes import datetime_min
 from mosaic.experiments.protocol import PERIODS, LeakageError, Period
 from mosaic.schema.ids import stable_hash
 
@@ -74,18 +75,16 @@ class DetectorFit:
         # required to report train-period metrics; what must never happen is a
         # later period containing rows the fit already saw.
         is_later = target_period in PERIODS and PERIODS.index(target_period) > PERIODS.index(self.period)
-        has_rows = (
-            frame is not None
-            and "timestamp" in frame.columns
-            and not frame.is_empty()
-        )
-        if is_later and has_rows and self.fitted_through is not None:
-            earliest = frame["timestamp"].min()
-            if earliest is not None and earliest < self.fitted_through:
-                raise LeakageError(
-                    f"detector fitted through {self.fitted_through} but {target_period} "
-                    f"contains a row from {earliest}; fit/evaluation overlap"
-                )
+        if not is_later or self.fitted_through is None or frame is None:
+            return
+        if "timestamp" not in frame.columns or frame.is_empty():
+            return
+        earliest = datetime_min(frame["timestamp"])
+        if earliest < self.fitted_through:
+            raise LeakageError(
+                f"detector fitted through {self.fitted_through} but {target_period} "
+                f"contains a row from {earliest.isoformat()}; fit/evaluation overlap"
+            )
 
 
 @dataclass
@@ -111,6 +110,9 @@ class ModelMetadata:
     random_seed: int
     hyperparameters: dict[str, Any] = field(default_factory=dict)
     deterministic: bool = False
+    #: Whether ``predict_proba`` is available and calibrated. Recorded per run so
+    #: an artifact never leaves a reader guessing whether a score is a probability.
+    produces_probability: bool = False
     fitted_features: tuple[str, ...] = ()
     n_parameters: int | None = None
     fit_seconds: float = 0.0
@@ -244,6 +246,7 @@ class Detector(abc.ABC):
             random_seed=self.random_seed,
             hyperparameters=self.hyperparameters,
             deterministic=self.deterministic,
+            produces_probability=self.produces_probability,
             fitted_features=self.feature_columns,
             fit_seconds=elapsed,
         )

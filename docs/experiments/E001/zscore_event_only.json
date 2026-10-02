@@ -19,8 +19,8 @@
    "event_value"
   ],
   "n_parameters": null,
-  "fit_seconds": 0.0006702000027871691,
-  "code_version": "7df009ab574c"
+  "fit_seconds": 0.0009773000056156889,
+  "code_version": "c244542fda59"
  },
  "detector": "zscore",
  "feature_columns": [

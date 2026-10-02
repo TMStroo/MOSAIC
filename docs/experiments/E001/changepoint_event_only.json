@@ -21,8 +21,8 @@
    "rate_24h"
   ],
   "n_parameters": null,
-  "fit_seconds": 0.0024326999991899356,
-  "code_version": "7df009ab574c"
+  "fit_seconds": 0.002813499995681923,
+  "code_version": "c244542fda59"
  },
  "detector": "changepoint",
  "feature_columns": [
@@ -256,7 +256,7 @@
     "ci95_high": 0.44538789295792913,
     "ci_method": "wilson"
    },
-   "inference_seconds": 0.026,
+   "inference_seconds": 0.025,
    "family_metrics": {
     "point": {
      "family": "point",
@@ -427,7 +427,7 @@
     "ci95_high": 0.314342289611951,
     "ci_method": "wilson"
    },
-   "inference_seconds": 0.017,
+   "inference_seconds": 0.018,
    "family_metrics": {
     "point": {
      "family": "point",

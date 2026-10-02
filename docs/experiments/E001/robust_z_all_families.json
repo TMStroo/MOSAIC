@@ -19,8 +19,8 @@
    "event_value"
   ],
   "n_parameters": null,
-  "fit_seconds": 0.002609299997857306,
-  "code_version": "7df009ab574c"
+  "fit_seconds": 0.0028854999982286245,
+  "code_version": "c244542fda59"
  },
  "detector": "robust_z",
  "feature_columns": [

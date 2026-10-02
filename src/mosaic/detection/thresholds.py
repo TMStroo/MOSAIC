@@ -23,7 +23,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Any
+from typing import Any, NamedTuple
 
 import polars as pl
 
@@ -105,7 +105,23 @@ def _counts(y_true: pl.Series, y_pred: pl.Series) -> dict[str, int]:
     return confusion_counts(y_true, y_pred)
 
 
-def _metrics_from_counts(counts: dict[str, int]) -> dict[str, float | None]:
+class _Rates(NamedTuple):
+    """Per-threshold rates.
+
+    ``fpr`` and ``f1`` are always defined -- FPR is 0.0 when there are no
+    negatives to divide by, and F1 is 0.0 when nothing was predicted positive --
+    while ``precision`` and ``recall`` are genuinely undefined when their
+    denominator is empty. Making that difference part of the type is the point:
+    the caller cannot accidentally treat a missing precision as 0.0.
+    """
+
+    precision: float | None
+    recall: float | None
+    f1: float
+    fpr: float
+
+
+def _metrics_from_counts(counts: dict[str, int]) -> _Rates:
     tp, fp, fn = counts["tp"], counts["fp"], counts["fn"]
     precision = tp / (tp + fp) if (tp + fp) else None
     recall = tp / (tp + fn) if (tp + fn) else None
@@ -114,7 +130,7 @@ def _metrics_from_counts(counts: dict[str, int]) -> dict[str, float | None]:
     else:
         f1 = 0.0
     fpr = fp / (fp + counts["tn"]) if (fp + counts["tn"]) else 0.0
-    return {"precision": precision, "recall": recall, "f1": f1, "fpr": fpr}
+    return _Rates(precision=precision, recall=recall, f1=f1, fpr=fpr)
 
 
 def _candidate_thresholds(scores: pl.Series, max_candidates: int = 512) -> list[float]:
@@ -175,39 +191,39 @@ def select_threshold(
     for candidate in candidates:
         evaluated += 1
         counts = _counts(y, scores >= candidate)
+        rates = _metrics_from_counts(counts)
+        # `value` is what the objective maximises subject to its own constraint,
+        # so a feasible candidate always beats no candidate.
         if method is ThresholdMethod.F1_MAX:
-            value = _metrics_from_counts(counts)["f1"] or 0.0
-            if best is None or value > best[0]:
-                best, best_threshold = (value, counts), candidate
+            value = rates.f1
         elif method is ThresholdMethod.PRECISION_CONSTRAINED:
-            stats = _metrics_from_counts(counts)
             if min_precision is None:
                 raise ValueError("precision_constrained requires min_precision")
-            if stats["precision"] is not None and stats["precision"] >= min_precision:
-                value = stats["recall"] or 0.0
-                if best is None or value > best[0]:
-                    best, best_threshold = (value, counts), candidate
+            if rates.precision is None or rates.precision < min_precision:
+                continue
+            # Among thresholds meeting the precision floor, flag as little as
+            # possible -- measured as the recall actually achieved.
+            value = rates.recall or 0.0
         elif method is ThresholdMethod.RECALL_CONSTRAINED:
-            stats = _metrics_from_counts(counts)
             if min_recall is None:
                 raise ValueError("recall_constrained requires min_recall")
-            if stats["recall"] is not None and stats["recall"] >= min_recall:
-                value = stats["precision"] or 0.0
-                if best is None or value > best[0]:
-                    best, best_threshold = (value, counts), candidate
+            if rates.recall is None or rates.recall < min_recall:
+                continue
+            value = rates.precision or 0.0
         elif method is ThresholdMethod.FIXED_FPR:
             if target_fpr is None:
                 raise ValueError("fixed_fpr requires target_fpr")
-            stats = _metrics_from_counts(counts)
-            # Among thresholds meeting the FPR ceiling, maximise F1.
-            if stats["fpr"] <= target_fpr:
-                value = stats["f1"] or 0.0
-                if best is None or value > best[0]:
-                    best, best_threshold = (value, counts), candidate
+            if rates.fpr > target_fpr:
+                continue
+            value = rates.f1
         else:  # pragma: no cover - StrEnum exhaustive
             raise ValueError(f"unknown threshold method {method!r}")
 
-    achieved = _metrics_from_counts(best[1]) if best else {}
+        if best is None or value > best[0]:
+            best, best_threshold = (value, counts), candidate
+
+    chosen: _Rates | None = _metrics_from_counts(best[1]) if best is not None else None
+    achieved: dict[str, float | None] = chosen._asdict() if chosen is not None else {}
     reason = ""
     feasible = best is not None
     if not feasible:

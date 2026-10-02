@@ -139,6 +139,14 @@ ignore = ["PLR0912", "PLR0913", "PLR0915", "PLR2004", "PLR0911", "PLR0915", "E50
 "src/mosaic/ingestion/synthetic/builder.py" = ["PLC0415"]
 "src/mosaic/ingestion/synthetic/vocabulary.py" = ["PLC0415"]
 "src/mosaic/ingestion/synthetic/__init__.py" = ["PLC0415"]
+# 3. One more deliberate convention, confined to a single file:
+#      detection/ml.py: `X` is the design-matrix argument name throughout
+#        scikit-learn's own API, its type stubs and its documentation. Matching
+#        it exactly keeps every estimator in this module recognisable to anyone
+#        who knows sklearn, and renaming it to `features` would make the
+#        correspondence harder, not easier. N806 (variable) and N803 (argument)
+#        are the two rules it triggers.
+"src/mosaic/detection/ml.py" = ["N806", "N803"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["mosaic"]

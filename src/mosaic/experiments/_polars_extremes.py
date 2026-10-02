@@ -90,3 +90,25 @@ def float_sum(series: pl.Series) -> int:
 def as_any(value: object) -> Any:
     """Escape hatch for genuinely dynamic values (e.g. a Polars scalar)."""
     return value
+
+
+def numeric_scalar(value: object, *, what: str, source: object = None) -> float:
+    """Narrow a Polars reduction result to a ``float``, or raise.
+
+    Polars' type stubs declare ``Series.mean()``/``std()``/``quantile()`` as
+    returning the union of *every* dtype it might hold, because the real return
+    type depends on the runtime dtype. Callers that have already established
+    the column is numeric still see that union, so this is the single place
+    where it is resolved.
+
+    A ``None`` result means the reduction was undefined (an empty or all-null
+    column for ``mean``/``quantile``). That is deliberately an error, not a
+    default: substituting 0.0 for an absent standard deviation would turn a
+    detector into one that flags everything, silently.
+    """
+    if value is None:
+        raise ValueError(f"cannot compute {what}: the reduction returned None")
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        detail = f" (source dtype {source!r})" if source is not None else ""
+        raise TypeError(f"expected a numeric result for {what}{detail}, got {type(value).__name__}")
+    return float(value)

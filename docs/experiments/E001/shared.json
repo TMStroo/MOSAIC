@@ -51,8 +51,8 @@
   "backtest": 101302,
   "forward": 71674
  },
- "fit_state_seconds": 0.13,
- "compute_features_seconds": 1.286,
+ "fit_state_seconds": 0.137,
+ "compute_features_seconds": 1.383,
  "threshold_method": "f1_max",
  "label_protocols": [
   "event_only",

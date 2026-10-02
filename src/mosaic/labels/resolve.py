@@ -32,6 +32,7 @@ from typing import Any
 
 import polars as pl
 
+from mosaic.experiments._polars_extremes import datetime_max, datetime_min
 from mosaic.experiments.protocol import PERIODS, LeakageError, Period
 
 LOGGER = logging.getLogger(__name__)
@@ -784,4 +785,4 @@ def label_window_bounds(resolution: LabelResolution) -> dict[str, tuple[datetime
     if pos.is_empty():
         return {}
     ts = pos["timestamp"]
-    return {"positives": (ts.min(), ts.max())}
+    return {"positives": (datetime_min(ts), datetime_max(ts))}
