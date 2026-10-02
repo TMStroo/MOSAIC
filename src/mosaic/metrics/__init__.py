@@ -257,7 +257,6 @@ def per_family_metrics(
     out: dict[str, dict[str, Any]] = {}
     positive_mask = frame[label_column].cast(pl.Boolean)
     predicted = frame[pred_column].cast(pl.Boolean)
-    has_family = frame[family_column].list.len() > 0
 
     for family in families:
         entry: dict[str, Any] = {
@@ -299,10 +298,11 @@ def per_family_metrics(
 def _masked_confusion(
     mask: pl.Series, positive: pl.Series, predicted: pl.Series
 ) -> dict[str, int]:
-    """Confusion restricted to ``mask`` rows, with ``~mask`` rows as negatives."""
-    sub_true = pl.Series([bool(p) and bool(m) for p, m in zip(positive, mask)])
-    sub_pred = pl.Series([bool(p) and bool(m) for p, m in zip(predicted, mask)])
-    # Rows outside the family are negatives for this family's task.
-    sub_true = pl.Series([bool(t) for t in sub_true])
-    sub_pred = pl.Series([bool(p) for p in sub_pred])
+    """Confusion restricted to ``mask`` rows, with ``~mask`` rows as negatives.
+
+    A row outside the family is a genuine negative for this family's task, so
+    its prediction is cleared rather than dropped.
+    """
+    sub_true = pl.Series([bool(p) and bool(m) for p, m in zip(positive, mask, strict=True)])
+    sub_pred = pl.Series([bool(p) and bool(m) for p, m in zip(predicted, mask, strict=True)])
     return confusion_counts(sub_true, sub_pred)

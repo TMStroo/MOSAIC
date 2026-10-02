@@ -28,8 +28,8 @@ from __future__ import annotations
 from mosaic.labels.resolve import (
     AGGREGATE_FAMILIES,
     ANOMALY_FAMILIES,
-    EVENT_FAMILIES,
     DEFAULT_SCOPE,
+    EVENT_FAMILIES,
     MINIMUM_FAMILY_SUPPORT,
     LabelResolution,
     LabelScope,

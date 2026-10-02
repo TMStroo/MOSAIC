@@ -16,7 +16,6 @@ import polars as pl
 import pytest
 
 from mosaic.detection.thresholds import (
-    FrozenThreshold,
     ThresholdMethod,
     assert_validation_only,
     freeze,
@@ -98,8 +97,10 @@ class TestFrozenThreshold:
             frozen.assert_applies_to(period)
 
     def test_frozen_threshold_is_immutable(self):
+        from dataclasses import FrozenInstanceError
+
         frozen = freeze(select_threshold(y_true=labels([True]), scores=scores([1.0])))
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             frozen.threshold = 99.0  # type: ignore[misc]
 
     def test_threshold_is_stable_across_identical_calls(self):

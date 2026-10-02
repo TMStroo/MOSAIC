@@ -21,8 +21,8 @@
    "event_value"
   ],
   "n_parameters": null,
-  "fit_seconds": 0.0038911000010557473,
-  "code_version": "994e701f2bd1"
+  "fit_seconds": 0.0024212999996962026,
+  "code_version": "7df009ab574c"
  },
  "detector": "iqr",
  "feature_columns": [
@@ -85,7 +85,7 @@
     "ci95_high": 0.17519078149097034,
     "ci_method": "wilson"
    },
-   "inference_seconds": 0.002,
+   "inference_seconds": 0.001,
    "family_metrics": {
     "point": {
      "family": "point",
@@ -256,7 +256,7 @@
     "ci95_high": 0.19630386454519674,
     "ci_method": "wilson"
    },
-   "inference_seconds": 0.003,
+   "inference_seconds": 0.002,
    "family_metrics": {
     "point": {
      "family": "point",

@@ -21,8 +21,8 @@
    "event_value"
   ],
   "n_parameters": null,
-  "fit_seconds": 0.02247699999861652,
-  "code_version": "994e701f2bd1"
+  "fit_seconds": 0.014978400002291892,
+  "code_version": "7df009ab574c"
  },
  "detector": "ewma",
  "feature_columns": [
@@ -85,7 +85,7 @@
     "ci95_high": 1.0,
     "ci_method": "wilson"
    },
-   "inference_seconds": 0.013,
+   "inference_seconds": 0.011,
    "family_metrics": {
     "point": {
      "family": "point",
@@ -310,7 +310,7 @@
     "ci95_high": 1.0,
     "ci_method": "wilson"
    },
-   "inference_seconds": 0.017,
+   "inference_seconds": 0.011,
    "family_metrics": {
     "point": {
      "family": "point",
@@ -517,7 +517,7 @@
     "ci95_high": 1.0,
     "ci_method": "wilson"
    },
-   "inference_seconds": 0.012,
+   "inference_seconds": 0.008,
    "family_metrics": {
     "point": {
      "family": "point",

@@ -32,6 +32,7 @@ import time
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass, field
 from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 import polars as pl
@@ -73,14 +74,18 @@ class DetectorFit:
         # required to report train-period metrics; what must never happen is a
         # later period containing rows the fit already saw.
         is_later = target_period in PERIODS and PERIODS.index(target_period) > PERIODS.index(self.period)
-        if is_later and frame is not None and self.fitted_through is not None:
-            if "timestamp" in frame.columns and not frame.is_empty():
-                earliest = frame["timestamp"].min()
-                if earliest is not None and earliest < self.fitted_through:
-                    raise LeakageError(
-                        f"detector fitted through {self.fitted_through} but {target_period} "
-                        f"contains a row from {earliest}; fit/evaluation overlap"
-                    )
+        has_rows = (
+            frame is not None
+            and "timestamp" in frame.columns
+            and not frame.is_empty()
+        )
+        if is_later and has_rows and self.fitted_through is not None:
+            earliest = frame["timestamp"].min()
+            if earliest is not None and earliest < self.fitted_through:
+                raise LeakageError(
+                    f"detector fitted through {self.fitted_through} but {target_period} "
+                    f"contains a row from {earliest}; fit/evaluation overlap"
+                )
 
 
 @dataclass
@@ -109,11 +114,15 @@ class ModelMetadata:
     fitted_features: tuple[str, ...] = ()
     n_parameters: int | None = None
     fit_seconds: float = 0.0
-    code_version: str = field(default_factory=lambda: _code_version())
+    # Populated by ``to_dict`` rather than at construction: the hash is of the
+    # file as it stands when the artifact is written, so a cached value could go
+    # stale relative to the code that produced the record.
+    code_version: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         out = asdict(self)
         out["fitted_features"] = list(self.fitted_features)
+        out["code_version"] = _code_version()
         return out
 
     def fingerprint(self) -> str:
@@ -122,8 +131,6 @@ class ModelMetadata:
 
 def _code_version() -> str:
     """Content hash of the detector source, so artifacts name the code that made them."""
-    from pathlib import Path
-
     try:
         source = Path(__file__).read_text(encoding="utf-8")
     except OSError:  # pragma: no cover - source unavailable (zip install)

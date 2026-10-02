@@ -14,6 +14,7 @@ be added without being exercised here.
 
 from __future__ import annotations
 
+import math
 from datetime import datetime, timedelta
 
 import polars as pl
@@ -185,7 +186,6 @@ class TestStatisticalDetectors:
 
     def test_robust_z_uses_median_not_mean(self):
         """One huge training outlier must not inflate the centre."""
-        clean = frame([10.0] * 19 + [11.0])
         contaminated = frame([10.0] * 19 + [10_000.0])
         robust = make("robust_z", ["v"])
         robust.fit(contaminated, period="train")
@@ -266,7 +266,7 @@ class TestDegenerateInputs:
         detector = make(name, ["v"])
         detector.fit(frame([7.0] * 20), period="train")
         scores = detector.score(frame([7.0, 7.0, 9.0], start=AFTER_TRAIN), target_period="forward").scores()
-        assert all(value == value for value in scores)  # not NaN
+        assert not any(math.isnan(value) for value in scores)
         assert all(abs(value) < float("inf") for value in scores)
 
     @pytest.mark.parametrize("name", ALL)
@@ -280,7 +280,7 @@ class TestDegenerateInputs:
         detector = make(name, ["v"])
         detector.fit(train_frame(), period="train")
         scores = detector.score(frame([None, 5.0, None], start=AFTER_TRAIN), target_period="forward").scores()
-        assert all(value == value for value in scores)
+        assert not any(math.isnan(value) for value in scores)
         assert scores[1] >= 0.0
 
     @pytest.mark.parametrize("name", ALL)

@@ -21,11 +21,13 @@ rather than silently omitted.
 
 from __future__ import annotations
 
+import json
 import logging
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import StrEnum
+from pathlib import Path
 from typing import Any
 
 import polars as pl
@@ -157,21 +159,17 @@ def minimum_support() -> int:
 
 def _read_truth(root: str | Any) -> tuple[pl.DataFrame, pl.DataFrame, pl.DataFrame, str]:
     """Read ``_truth/`` and the manifest version stamp."""
-    from pathlib import Path
-
     base = Path(str(root))
     truth = base / "_truth"
     labels = pl.read_parquet(truth / "labels.parquet")
     links = pl.read_parquet(truth / "entity_links.parquet")
     latent = pl.read_parquet(truth / "latent_events.parquet")
-    import json
-
     manifest = json.loads((base / "manifest.json").read_text(encoding="utf-8"))
     version = f"{manifest.get('dataset_name', base.name)}:{manifest.get('generator_version', 'unknown')}"
     return labels, links, latent, version
 
 
-def _latent_of(events: pl.DataFrame) -> pl.Expr:
+def _latent_of() -> pl.Expr:
     """Recover ``latent_id`` from the encoded ``source_record_id``.
 
     The generator writes a per-source prefix (``se-L001574471``,
@@ -224,7 +222,7 @@ def resolve_labels(
 
     frame = events
     if "_latent" not in frame.columns:
-        frame = frame.with_columns(_latent_of(frame).alias("_latent"))
+        frame = frame.with_columns(_latent_of().alias("_latent"))
 
     # --- entity resolution for truth targets -------------------------------
     # ``target_ref`` for entity-kind anomalies is a latent *entity key*
@@ -258,11 +256,9 @@ def resolve_labels(
     else:  # pragma: no cover - only when links are absent
         frame = frame.with_columns(pl.lit(None, dtype=pl.Utf8).alias("_truth_key"))
 
-    truth_keys_of_entity = set(links["entity_key"].unique().to_list())
-
     frame = _attach_event_labels(frame, injected)
     frame = _attach_entity_labels(frame, injected, latent)
-    frame = _attach_window_labels(frame, injected, latent)
+    frame = _attach_window_labels(frame, injected)
 
     frame = _finalize(frame)
     # Per-protocol selection happens after all protocol-independent work, so
@@ -564,9 +560,7 @@ def _aggregate_entity_hits(hits: pl.DataFrame, ent: pl.DataFrame) -> pl.DataFram
     return out
 
 
-def _attach_window_labels(
-    frame: pl.DataFrame, injected: pl.DataFrame, latent: pl.DataFrame
-) -> pl.DataFrame:
+def _attach_window_labels(frame: pl.DataFrame, injected: pl.DataFrame) -> pl.DataFrame:
     """``target_kind in {'window', 'source_window'}``: time-interval match.
 
     ``temporal`` labels mark a 6-hour bucket, so every event in the declared
@@ -739,7 +733,7 @@ def _family_coverage(frame: pl.DataFrame) -> dict[str, int]:
     """
     coverage: dict[str, int] = {}
     if not frame.height:
-        return {family: 0 for family in ANOMALY_FAMILIES}
+        return dict.fromkeys(ANOMALY_FAMILIES, 0)
     exploded = frame.select("anomaly_family").explode("anomaly_family")
     for family in ANOMALY_FAMILIES:
         coverage[family] = exploded.filter(pl.col("anomaly_family") == family).height
@@ -778,7 +772,7 @@ def assert_labels_never_fitted(
     if fitted_period in tuple(label_periods):
         raise LeakageError(
             f"refusing to fit on {fitted_period}: labels exist in "
-            f"{[p for p in label_periods]}, so fitting there leaks the evaluation target"
+            f"{list(label_periods)}, so fitting there leaks the evaluation target"
         )
 
 

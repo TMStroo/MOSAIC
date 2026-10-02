@@ -19,8 +19,8 @@
    "event_value"
   ],
   "n_parameters": null,
-  "fit_seconds": 0.0008998999983305112,
-  "code_version": "994e701f2bd1"
+  "fit_seconds": 0.0006702000027871691,
+  "code_version": "7df009ab574c"
  },
  "detector": "zscore",
  "feature_columns": [
@@ -254,7 +254,7 @@
     "ci95_high": 0.03937686082314402,
     "ci_method": "wilson"
    },
-   "inference_seconds": 0.002,
+   "inference_seconds": 0.001,
    "family_metrics": {
     "point": {
      "family": "point",

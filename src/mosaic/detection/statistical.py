@@ -258,11 +258,11 @@ class EWMAResidualDetector(Detector):
         out: list[float] = []
         level = self._level
         alpha = self.alpha
-        for value in data[column]:
-            if value is None:
+        for raw in data[column]:
+            if raw is None:
                 out.append(0.0)
                 continue
-            value = float(value)
+            value = float(raw)
             residual = abs(value - level)
             level = (1.0 - alpha) * level + alpha * value
             out.append(residual)

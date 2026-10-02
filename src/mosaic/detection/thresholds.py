@@ -21,7 +21,6 @@ infeasible, so a failed constraint is reported rather than silently relaxed.
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
@@ -29,6 +28,7 @@ from typing import Any
 import polars as pl
 
 from mosaic.experiments.protocol import PERIODS, LeakageError, Period
+from mosaic.metrics import confusion_counts
 
 
 class ThresholdMethod(StrEnum):
@@ -102,8 +102,6 @@ def assert_validation_only(period: Period | str) -> None:
 
 
 def _counts(y_true: pl.Series, y_pred: pl.Series) -> dict[str, int]:
-    from mosaic.metrics import confusion_counts
-
     return confusion_counts(y_true, y_pred)
 
 
@@ -136,10 +134,10 @@ def _candidate_thresholds(scores: pl.Series, max_candidates: int = 512) -> list[
     # solution exists whenever one is required.
     sentinel = top + max(1e-9, abs(top) * 1e-9)
     if len(unique) <= max_candidates:
-        return sorted(set(unique + [sentinel]))
+        return sorted({*unique, sentinel})
     step = len(unique) / max_candidates
     sampled = [unique[int(i * step)] for i in range(max_candidates)]
-    return sorted(set(sampled + [sentinel]))
+    return sorted({*sampled, sentinel})
 
 
 def select_threshold(

@@ -11,19 +11,17 @@ from-scratch implementations agree, including on ties.
 
 from __future__ import annotations
 
-import math
-
 import polars as pl
 import pytest
 
 from mosaic.metrics import (
-    Interval,
+    average_precision,
     confusion_counts,
     evaluate_predictions,
     per_family_metrics,
+    roc_auc,
     wilson_interval,
 )
-from mosaic.metrics import average_precision, roc_auc
 
 
 def series(values: list[bool]) -> pl.Series:
@@ -95,8 +93,8 @@ class TestConfusion:
 
 class TestAveragePrecision:
     def test_matches_sklearn(self):
-        from sklearn.metrics import average_precision_score
         import numpy as np
+        from sklearn.metrics import average_precision_score
 
         rng = np.random.default_rng(11)
         y = rng.random(500) < 0.05
@@ -128,8 +126,8 @@ class TestAveragePrecision:
 
 class TestRocAuc:
     def test_matches_sklearn(self):
-        from sklearn.metrics import roc_auc_score
         import numpy as np
+        from sklearn.metrics import roc_auc_score
 
         rng = np.random.default_rng(3)
         y = rng.random(400) < 0.04
